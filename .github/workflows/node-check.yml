@@ -1,0 +1,57 @@
+name: Node Syntax Check
+
+# 有人提交 PR 时自动校验仓库内所有 JS 脚本的语法；也顺带守护 main 分支。
+# 任何人新增/修改 .js 文件，本流程都会自动覆盖，无需维护文件清单。
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# 同一分支的新推送会取消旧的运行，省 GitHub 额度。
+concurrency:
+  group: node-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-check:
+    name: node --check all scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax-check every script
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning for JS scripts..."
+          mapfile -t files < <(find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) \
+            -not -path '*/node_modules/*' -not -path '*/.git/*')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No JS files found."
+            exit 0
+          fi
+          echo "Found ${#files[@]} script(s). Running 'node --check' on each..."
+          status=0
+          for f in "${files[@]}"; do
+            if node --check "$f"; then
+              echo "  OK   $f"
+            else
+              echo "  FAIL $f"
+              status=1
+            fi
+          done
+          if [ "$status" -ne 0 ]; then
+            echo "::error::One or more scripts failed 'node --check'"
+            exit 1
+          fi
+          echo "All scripts passed syntax check."
