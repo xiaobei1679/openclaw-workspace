@@ -37,6 +37,8 @@ make healthcheck                          # check + validate + test together
   (`safePath`, `parseFiles`, and the `node --check` sweep in `scripts/ci/check-syntax.mjs`).
 - `tests/edge-cases.test.mjs` — boundary & security tests (null bytes, empty inputs,
   deep escapes, multi-file payloads, non-standard fence formats).
+- `tests/observer.test.mjs` — Observer Agent: protected paths, secret scan, syntax gate,
+  and agent-contract path safety (the automated PR reviewer in `scripts/ci/observer.mjs`).
 - `tests/validate-config.test.mjs` — covers the published `.env.example` + `config/openclaw.json.example` shape.
 - `scripts/ci/check-syntax.mjs` — the canonical syntax gate reused by CI, `make check`, and the tests.
 - `scripts/ci/validate-config.mjs` — config-first gate: ensures the shipped templates are well-formed.
@@ -57,7 +59,9 @@ make healthcheck                          # check + validate + test together
 1. Fork / branch → make your change.
 2. **Run `node --check` on every script you touched** and ensure it passes
    (`make check`). Also run `node --test tests/` for the functional smoke tests.
-3. Open a PR → the `Node Syntax Check` GitHub Action runs automatically and **must be green** to merge.
+3. Open a PR → the `Node Syntax Check` and `Observer Agent Review` GitHub Actions run
+   automatically and **must be green** to merge. (Local pre-commit hook also runs the
+   Observer Agent via `scripts/ci/observer.mjs --diff`.)
 
 ## Hard rules (violations get blocked by CI or review)
 - ❌ **No hardcoded absolute paths** (especially `C:\Users\Administrator`, `/Users/...`).

@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review install-hooks help
+.PHONY: check test validate healthcheck run-agent install verify review install-hooks observer help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -33,6 +33,9 @@ review:  ## Daily review gate: show unpushed changes + run healthcheck
 
 install-hooks: ## Enable local pre-commit hook (syntax + config + tests)
 	bash scripts/install-hooks.sh
+
+observer: ## Review current changes for rule violations (paths/secrets/syntax/contract)
+	$(NODE) scripts/ci/observer.mjs --diff
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

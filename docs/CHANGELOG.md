@@ -5,6 +5,17 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Observer Agent 自动审查冲刺 · 本地，未推送）
+- 新增 **Observer Agent** `scripts/ci/observer.mjs`：纯函数、零密钥的自动化 PR/改动审查器，堵住四类风险：
+  - 禁入库路径守卫（`.env` / `config/openclaw.json` / 个人数据目录如 `novel/` `gbrain/` `workspace/memory/` 等）
+  - 明文密钥扫描（常见前缀 `ghp_` / `sk-` / `AKIA` / JWT + 高熵串；误报控制：跳过 `.example` 模板与占位符行）
+  - 语法门禁（对每个 `.js/.mjs/.cjs` 跑 `node --check`）
+  - 智能体契约路径安全（拒绝越界 / 指向禁改文件）
+- 新增 `tests/observer.test.mjs`（11 个测试）：覆盖四类规则的正例/反例与 `runReview` 集成
+- 接入：`Makefile`/`dev.sh` 新增 `observer` 命令；`.githooks/pre-commit` 提交前串接 observer；新增 `.github/workflows/observer.yml`（PR 时自动审，仅仓库文件、未推送）
+- 测试总量从 34 → **45**（smoke 8 + validate-config 4 + edge-cases 14 + scaffold 8 + observer 11），全绿
+- `ROADMAP.md`：Observer Agent（Next→Done）；`CHANGELOG`/`README`/`AGENTS.md` 同步
+
 ### 2026-07-09（CI硬化 + 开发体验冲刺 · 本地，未推送）
 - **CI 硬化**：`node-check.yml` 从仅语法检查升级为跑完整 `make healthcheck`（语法 + 配置校验 + 全量测试），CI 与本地质量门完全一致，坏测试的 PR 不再能过关
 - 新增 **预提交钩子**：`.githooks/pre-commit`（提交前本地跑 healthcheck）+ `scripts/install-hooks.sh` 一键安装，`Makefile`/`dev.sh` 新增 `install-hooks` 命令

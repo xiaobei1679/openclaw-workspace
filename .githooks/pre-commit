@@ -15,5 +15,8 @@ node scripts/ci/validate-config.mjs || { echo ":: config validation failed, comm
 echo "== pre-commit: tests =="
 node --test tests/*.test.mjs || { echo ":: tests failed, commit aborted"; exit 1; }
 
+echo "== pre-commit: observer (rule review) =="
+node scripts/ci/observer.mjs --diff || { echo ":: observer found rule violations, commit aborted"; exit 1; }
+
 echo "== pre-commit: all green, proceeding =="
 exit 0

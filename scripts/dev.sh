@@ -34,6 +34,9 @@ case "${1:-help}" in
   install-hooks)
     bash scripts/install-hooks.sh
     ;;
+  observer)
+    "$NODE_BIN" scripts/ci/observer.mjs --diff
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -60,7 +63,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer}"
     exit 1
     ;;
 esac

@@ -28,6 +28,7 @@
 - **Skill/agent scaffolder** (`scripts/scaffold.mjs` + `tests/scaffold.test.mjs`) — one-command starter skill/agent from template; lowers contribution friction
 - **Pre-commit hook** (`.githooks/pre-commit` + `scripts/install-hooks.sh`, `make install-hooks`) — runs the local healthcheck before each commit
 - **CI hardening**: `node-check.yml` now runs the full `make healthcheck` (syntax + config + tests), not just `node --check` — a PR that breaks tests can no longer pass CI
+- **Observer Agent** (`scripts/ci/observer.mjs` + `tests/observer.test.mjs`) — automated change/PR reviewer: protected-path guard, secret scan, syntax gate, agent-contract path safety; wired into `make observer`, the pre-commit hook, and `.github/workflows/observer.yml`
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
@@ -35,7 +36,6 @@
 ## Next 🔜 (high value, low risk)
 - **Eval harness**: LLM-as-judge regression tests over agent outputs, CI-gated (the "evaluation" pillar)
 - **Router Agent**: a planner that decomposes a task and routes to specialist agents
-- **Observer Agent**: automatically review PRs for rule violations (paths, secrets, `node --check`)
 - **Drift monitoring**: shadow-mode comparison of agent outputs (semantic similarity + schema check)
 - **i18n docs**: translate `docs/` into both Chinese and English sections
 

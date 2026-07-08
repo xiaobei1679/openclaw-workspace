@@ -1,7 +1,7 @@
 # AI Multi-Agent Workspace
 
 ![CI](https://github.com/xiaobei1679/openclaw-workspace/actions/workflows/node-check.yml/badge.svg)
-![Tests](https://img.shields.io/badge/tests-34%20passing-green)
+![Tests](https://img.shields.io/badge/tests-45%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Template](https://img.shields.io/badge/repo-Template-blueviolet)
 
@@ -20,6 +20,7 @@
 - **密钥安全**：所有 token 均为环境变量占位符，仓库不含任何明文密钥
 - **贡献友好**：`scripts/scaffold.mjs` 一键生成技能/智能体模板；`make install-hooks` 安装提交前质量门
 - **CI 与本地一致**：`node-check.yml` 跑完整 healthcheck（语法 + 配置 + 测试），坏改动无法过关
+- **Observer Agent 自动审查**：`scripts/ci/observer.mjs` 在提交前 / PR 时拦截禁入库路径、明文密钥、坏语法与智能体契约越界
 - **一键部署**：内置 PowerShell / Bash 部署脚本，自动复制并校验
 
 ---
