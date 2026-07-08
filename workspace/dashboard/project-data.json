@@ -1,0 +1,295 @@
+{
+  "generated": "2026-07-05T01:43:55.709Z",
+  "projects": {
+    "novel": {
+      "name": "异兽学院",
+      "sections": [
+        {
+          "name": "小说正文",
+          "fileCount": 2,
+          "sizeKB": "17.5",
+          "lastModified": "2026-07-01T21:32:34.194Z",
+          "recentFiles": [
+            {
+              "name": "第1章_云渡市来的新生_重启版.md",
+              "ext": ".md",
+              "sizeKB": "9.3",
+              "mtime": "2026-07-01T21:32:34.194Z"
+            },
+            {
+              "name": "第1章_云渡市来的新生_精修版.md",
+              "ext": ".md",
+              "sizeKB": "8.2",
+              "mtime": "2026-06-30T12:48:46.240Z"
+            }
+          ]
+        },
+        {
+          "name": "游戏原型",
+          "fileCount": 3,
+          "sizeKB": "69.7",
+          "lastModified": "2026-06-30T22:24:45.133Z",
+          "recentFiles": [
+            {
+              "name": "方案B_自走棋布阵.html",
+              "ext": ".html",
+              "sizeKB": "22.0",
+              "mtime": "2026-06-30T22:24:45.133Z"
+            },
+            {
+              "name": "方案A_即时战术RPG.html",
+              "ext": ".html",
+              "sizeKB": "23.5",
+              "mtime": "2026-06-30T22:23:45.386Z"
+            },
+            {
+              "name": "index.html",
+              "ext": ".html",
+              "sizeKB": "24.2",
+              "mtime": "2026-06-30T14:42:17.039Z"
+            }
+          ]
+        },
+        {
+          "name": "音乐",
+          "fileCount": 1,
+          "sizeKB": "7.3",
+          "lastModified": "2026-06-27T23:58:26.237Z",
+          "recentFiles": [
+            {
+              "name": "主题曲_歌词_20260628.md",
+              "ext": ".md",
+              "sizeKB": "7.3",
+              "mtime": "2026-06-27T23:58:26.237Z"
+            }
+          ]
+        },
+        {
+          "name": "视觉",
+          "fileCount": 5,
+          "sizeKB": "197.5",
+          "lastModified": "2026-06-28T00:20:19.512Z",
+          "recentFiles": [
+            {
+              "name": "山海巨兽录_第2集_穷奇_制作脚本_20260628.md",
+              "ext": ".md",
+              "sizeKB": "71.8",
+              "mtime": "2026-06-28T00:20:19.512Z"
+            },
+            {
+              "name": "山海巨兽录_第1集_烛渊_制作脚本_20260628.md",
+              "ext": ".md",
+              "sizeKB": "48.1",
+              "mtime": "2026-06-28T00:00:17.935Z"
+            },
+            {
+              "name": "异兽学院_异常讨伐.html",
+              "ext": ".html",
+              "sizeKB": "28.5",
+              "mtime": "2026-06-23T13:10:11.230Z"
+            }
+          ]
+        },
+        {
+          "name": "知识库",
+          "fileCount": 25,
+          "sizeKB": "272.9",
+          "lastModified": "2026-07-04T15:59:34.360Z",
+          "recentFiles": [
+            {
+              "name": "联网学习补充_2026-07-04.md",
+              "ext": ".md",
+              "sizeKB": "11.6",
+              "mtime": "2026-07-04T15:59:34.360Z"
+            },
+            {
+              "name": "INDEX.md",
+              "ext": ".md",
+              "sizeKB": "9.8",
+              "mtime": "2026-07-04T15:59:34.322Z"
+            },
+            {
+              "name": "创作知识库_汇总版.md",
+              "ext": ".md",
+              "sizeKB": "44.1",
+              "mtime": "2026-07-04T15:59:34.283Z"
+            }
+          ]
+        },
+        {
+          "name": "方案",
+          "fileCount": 43,
+          "sizeKB": "1046.9",
+          "lastModified": "2026-07-02T15:23:40.631Z",
+          "recentFiles": [
+            {
+              "name": "抖音收藏提炼_20260702.md",
+              "ext": ".md",
+              "sizeKB": "6.9",
+              "mtime": "2026-07-02T15:23:40.631Z"
+            },
+            {
+              "name": "异兽学院_游戏化战斗系统_v0.1.md",
+              "ext": ".md",
+              "sizeKB": "15.9",
+              "mtime": "2026-06-30T14:36:19.083Z"
+            },
+            {
+              "name": "抖音收藏提炼_20260630.md",
+              "ext": ".md",
+              "sizeKB": "3.3",
+              "mtime": "2026-06-30T14:29:59.853Z"
+            }
+          ]
+        },
+        {
+          "name": "审核报告",
+          "fileCount": 6,
+          "sizeKB": "149.8",
+          "lastModified": "2026-06-28T00:34:39.120Z",
+          "recentFiles": [
+            {
+              "name": "第11-20章_五维度审核_20260628.md",
+              "ext": ".md",
+              "sizeKB": "51.3",
+              "mtime": "2026-06-28T00:34:39.120Z"
+            },
+            {
+              "name": "第6-10章_五维度审核_20260628.md",
+              "ext": ".md",
+              "sizeKB": "32.1",
+              "mtime": "2026-06-28T00:18:17.416Z"
+            },
+            {
+              "name": "第1-5章_五维度审核_20260628.md",
+              "ext": ".md",
+              "sizeKB": "18.0",
+              "mtime": "2026-06-28T00:13:07.252Z"
+            }
+          ]
+        }
+      ],
+      "totalFiles": 85,
+      "totalSize": 1803941,
+      "lastModified": "2026-07-04T15:59:34.360Z"
+    },
+    "video": {
+      "name": "山海巨兽录",
+      "sections": [
+        {
+          "name": "山海巨兽录",
+          "fileCount": 15,
+          "sizeKB": "5099.6",
+          "files": [
+            {
+              "name": "AI视频管线调研_20260705.md",
+              "ext": ".md",
+              "sizeKB": "12.1",
+              "mtime": "2026-07-05T01:39:46.712Z"
+            },
+            {
+              "name": "AI音乐配音调研_20260705.md",
+              "ext": ".md",
+              "sizeKB": "8.6",
+              "mtime": "2026-07-05T01:37:19.652Z"
+            },
+            {
+              "name": "漫剧脚本模板_20260703.md",
+              "ext": ".md",
+              "sizeKB": "3.6",
+              "mtime": "2026-07-03T00:05:19.909Z"
+            },
+            {
+              "name": "PIPELINE_OWNER.md",
+              "ext": ".md",
+              "sizeKB": "1.2",
+              "mtime": "2026-06-29T23:59:06.077Z"
+            },
+            {
+              "name": "EP01_完整版.mp4",
+              "ext": ".mp4",
+              "sizeKB": "1184.6",
+              "mtime": "2026-06-29T23:41:51.530Z"
+            }
+          ]
+        }
+      ],
+      "totalFiles": 15,
+      "totalSize": 5221989,
+      "lastModified": "2026-07-05T01:39:46.712Z",
+      "recentFiles": [
+        {
+          "name": "AI视频管线调研_20260705.md",
+          "ext": ".md",
+          "sizeKB": "12.1",
+          "mtime": "2026-07-05T01:39:46.712Z"
+        },
+        {
+          "name": "AI音乐配音调研_20260705.md",
+          "ext": ".md",
+          "sizeKB": "8.6",
+          "mtime": "2026-07-05T01:37:19.652Z"
+        },
+        {
+          "name": "漫剧脚本模板_20260703.md",
+          "ext": ".md",
+          "sizeKB": "3.6",
+          "mtime": "2026-07-03T00:05:19.909Z"
+        },
+        {
+          "name": "PIPELINE_OWNER.md",
+          "ext": ".md",
+          "sizeKB": "1.2",
+          "mtime": "2026-06-29T23:59:06.077Z"
+        },
+        {
+          "name": "EP01_完整版.mp4",
+          "ext": ".mp4",
+          "sizeKB": "1184.6",
+          "mtime": "2026-06-29T23:41:51.530Z"
+        }
+      ]
+    },
+    "hotspot": {
+      "name": "每日热点",
+      "totalDirs": 7,
+      "days": [
+        {
+          "date": "qclaw20260705",
+          "fileCount": 7,
+          "mtime": "2026-07-05T00:11:41.250Z"
+        },
+        {
+          "date": "qclaw20260704",
+          "fileCount": 6,
+          "mtime": "2026-07-04T00:07:22.946Z"
+        },
+        {
+          "date": "qclaw20260703",
+          "fileCount": 7,
+          "mtime": "2026-07-03T14:04:26.547Z"
+        },
+        {
+          "date": "qclaw20260702",
+          "fileCount": 4,
+          "mtime": "2026-07-02T14:12:47.395Z"
+        },
+        {
+          "date": "qclaw20260701",
+          "fileCount": 6,
+          "mtime": "2026-07-01T12:51:30.115Z"
+        },
+        {
+          "date": "qclaw20260630",
+          "fileCount": 4,
+          "mtime": "2026-06-30T00:09:47.974Z"
+        },
+        {
+          "date": "qclaw20260629",
+          "fileCount": 5,
+          "mtime": "2026-06-29T00:10:59.871Z"
+        }
+      ]
+    }
+  }
+}
