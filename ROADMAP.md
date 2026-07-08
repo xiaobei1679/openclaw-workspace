@@ -34,12 +34,12 @@
 - **Eval harness** (`scripts/eval/eval.mjs` + `tests/eval.test.mjs`) — the "evaluation pillar": zero-dep, CI-gated deterministic regression over the repo's pure agents (router/observer/scaffold), with an optional LLM-as-judge layer (gated by `EVAL_LLM_BASE_URL`) and `--baseline`/`--compare` drift monitoring; wired into `make eval` / `healthcheck` and `node-check.yml`
 - **Reviewer Agent (专员审核)** (`scripts/ci/reviewer.mjs` + `tests/reviewer.test.mjs`) — local full-tree review gate that aggregates syntax + config + observer + tests into one structured PASS/FAIL verdict (`runReviewer` / `verdict` / `formatReport` / `runCheck`); the engine behind `make reviewer` and the gate that lets the 30-minute automation auto-push `origin/main` only on PASS
 - **Drift monitoring** — delivered inside the Eval harness via `--baseline` / `--compare` (token-overlap similarity as a zero-dep semantic-similarity proxy, flags drift < 0.98)
+- **i18n docs** — `docs/` is now consistently bilingual (Chinese first, English after): `ARCHITECTURE.md` rewritten with a full Chinese translation (system overview / autonomous pipeline / agent team / script system / CI gates / memory layers / observability), plus a new `docs/README.md` index that states the bilingual convention and links every public doc; `AGENTS.md` "See also" now points to the docs index
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
-- **i18n docs**: translate `docs/` into both Chinese and English sections
 
 ## Later 💡
 - Lightweight web dashboard for workspace state (reuse `dashboard-data.js` concept)

@@ -50,8 +50,9 @@ make healthcheck                          # check + validate + test together
   Run all: `node --test tests/*.test.mjs` or `make test`.
 
 ## See also
+- `docs/README.md` — documentation index and the bilingual (中/EN) convention for `docs/`.
 - `docs/AGENT_CONTRACT.md` — the agent interaction contract (task format, change JSON, path safety).
-- `docs/ARCHITECTURE.md` — system architecture diagrams and autonomous pipeline flow.
+- `docs/ARCHITECTURE.md` — system architecture diagrams and autonomous pipeline flow (bilingual).
 - `ROADMAP.md` — what's done / in progress / next.
 - `SECURITY.md` — vulnerability reporting and secrets policy.
 - `CODE_OF_CONDUCT.md` — community behavior standards.

@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（i18n docs：docs/ 中英双语化 · 本地，未推送）
+- 完成 **ROADMAP Next「i18n docs」**：把对外文档统一为「中文在前、英文在后」的单文件双语（文档级，低风险高价值）：
+  - `docs/ARCHITECTURE.md` 改写：新增完整中文翻译段（系统总览 / 自主智能体管线 / 智能体团队 / 脚本系统 / CI 质量门 / 记忆层级 / 可观测性），英文原文保留在后；ASCII 架构图语言无关，中英共用
+  - 新增 `docs/README.md` 双语索引：说明 i18n 约定并列出全部对外文档（AGENT_CONTRACT / ARCHITECTURE / CHANGELOG）与根目录入口，提升可导航性
+  - `AGENTS.md`「See also」新增指向 `docs/README.md` 文档中心
+- 调研依据：OSS 文档 i18n 最佳实践——中小型项目用「单文件双语（同文件中文段+英文段）」优于多语言分目录（i18next 文档、JavaGuide 国际化指南）；本仓库 `AGENT_CONTRACT.md` 已采用此约定，本次统一补齐 `ARCHITECTURE.md` 并建索引；参考 crewAI 等框架的清晰文档结构（项目布局 + 开发循环 + 结构化输出）
+- 质量门影响：纯 Markdown 改动，不触及任何 `.js/.mjs` 质量门脚本与 `scripts/eval/`；`node --check` / `validate-config` / `tests` / `observer` 不受影响
+- `ROADMAP.md`：i18n docs（Next→Done）
+
 ### 2026-07-09（Eval 评估支柱 + 修复 Reviewer 缺失模块 · 本地，未推送）
 - 新增 **Eval 评估工具** `scripts/eval/eval.mjs`：把"评估支柱"做成零依赖、可 CI 门禁的**回归 + 漂移监控**工具（特性级）：
   - 第 1 层（确定性，常驻 CI、零密钥）：对仓库既有纯函数 agent（router / observer / scaffold）的固定输入断言"不变量"——确定性、契约形态、禁路径守卫、密钥扫描正负例、slug 归一化；任一失败即红
