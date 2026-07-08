@@ -1,5 +1,5 @@
 #!/bin/bash
-# QClaw Workspace 部署脚本 (macOS/Linux)
+# AI Agent Workspace 部署脚本 (macOS/Linux)
 # 用法: ./deploy/install.sh
 
 set -e
@@ -9,7 +9,7 @@ WORKSPACE_DIR="$QCLAW_DIR/workspace"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "=== QClaw Workspace 部署 ==="
+echo "=== AI Agent Workspace 部署 ==="
 
 # 1. 检查 OpenClaw
 echo "[1/6] 检查 OpenClaw..."
@@ -61,7 +61,7 @@ fi
 # 6. 复制小说产出
 echo "[6/6] 复制小说产出..."
 if [ -d "$REPO_ROOT/novel" ]; then
-    PROJECT_DIR="${QCLAW_PROJECT_DIR:-$HOME_DIR/Desktop/QClaw产出文件}"
+    PROJECT_DIR="${QCLAW_PROJECT_DIR:-$HOME_DIR/Desktop/项目产出}"
     mkdir -p "$PROJECT_DIR"
     cp -r "$REPO_ROOT/novel/"* "$PROJECT_DIR/"
     echo "  小说产出已复制到: $PROJECT_DIR"

@@ -73,3 +73,18 @@ build/
 # 框架运行时自动生成的目录（含个人路径/状态，重新运行即再生，不发布）
 /workspace/.learnings/.learnings/
 /workspace/.learnings/archive/
+/workspace/.learnings/knowledge-inbox/
+
+# 仪表盘数据（含个人项目统计，使用者本地产生）
+/workspace/dashboard/project-data.json
+
+# 团队配置（真实员工名册与 SOUL 文件，使用者自行组建团队）
+/workspace/团队配置/
+
+# 用户级记忆/身份/心跳（高度个性化，参见 workspace/USER.md.example）
+/workspace/HEARTBEAT.md
+/workspace/IDENTITY.md
+/workspace/MEMORY.md
+/workspace/MEMORY-RULES.md
+/workspace/MEMORY-PROFILE.md
+/workspace/MEMORY-STATUS.md

@@ -1,4 +1,4 @@
-﻿# QClaw 部署验证脚本
+﻿# AI Agent Workspace 部署验证脚本
 $ErrorActionPreference = "Continue"
 $pass = 0; $fail = 0
 
@@ -12,7 +12,7 @@ function Warn($name, $condition) {
     else { Write-Host "  ⚠️  $name（可选，未配置不影响框架运行）" -ForegroundColor Yellow }
 }
 
-Write-Host "=== QClaw 部署验证 ===" -ForegroundColor Cyan
+Write-Host "=== AI Agent Workspace 部署验证 ===" -ForegroundColor Cyan
 
 $WS = "$env:USERPROFILE\.qclaw\workspace"
 Check "AGENTS.md" (Test-Path "$WS\AGENTS.md")
@@ -26,7 +26,7 @@ Check "团队配置/" (Test-Path "$WS\团队配置")
 Check "skills/" (Test-Path "$WS\skills")
 Check "openclaw.json" (Test-Path "$env:USERPROFILE\.qclaw\openclaw.json")
 Warn "gbrain/（可选）" (Test-Path "$env:USERPROFILE\gbrain")
-$novelDir = if ($env:QCLAW_PROJECT_DIR) { $env:QCLAW_PROJECT_DIR } else { Join-Path $env:USERPROFILE "Desktop" "QClaw产出文件" }
+$novelDir = if ($env:QCLAW_PROJECT_DIR) { $env:QCLAW_PROJECT_DIR } else { Join-Path $env:USERPROFILE "Desktop" "项目产出" }
 Warn "小说产出（可选）" (Test-Path $novelDir)
 
 Write-Host ""

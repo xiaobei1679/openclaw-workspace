@@ -12,7 +12,7 @@ const HEALTH_DIR = path.join(WORKSPACE_ROOT, '.health');
 // 用户项目产出根目录（小说/方案/知识库等），由环境变量覆盖，缺省回退到当前用户 Desktop
 // 这样任何人 clone 后无需改代码即可用自己的目录；原使用者设 QCLAW_PROJECT_DIR 沿用旧目录
 const PROJECT_DIR = process.env.QCLAW_PROJECT_DIR
-  || path.join(os.homedir(), 'Desktop', 'QClaw产出文件');
+  || path.join(os.homedir(), 'Desktop', '项目产出');
 const HOT_DIR = process.env.QCLAW_HOT_DIR
   || path.join(os.homedir(), 'Desktop', '每日热点');
 

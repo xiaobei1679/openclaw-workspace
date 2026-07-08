@@ -1,4 +1,4 @@
-﻿# QClaw Workspace 部署脚本 (Windows)
+﻿# AI Agent Workspace 部署脚本 (Windows)
 # 用法: ./deploy/install.ps1
 
 $ErrorActionPreference = "Stop"
@@ -8,7 +8,7 @@ $WORKSPACE_DIR = Join-Path $QCLAW_DIR "workspace"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $REPO_ROOT = Split-Path -Parent $SCRIPT_DIR
 
-Write-Host "=== QClaw Workspace 部署 ===" -ForegroundColor Cyan
+Write-Host "=== AI Agent Workspace 部署 ===" -ForegroundColor Cyan
 
 # 1. 检查 OpenClaw
 Write-Host "[1/6] 检查 OpenClaw..." -ForegroundColor Yellow
@@ -74,7 +74,7 @@ if (Test-Path $gbrainSrc) {
 # 6. 复制小说产出（仓库未含时仅确保目标目录存在）
 Write-Host "[6/6] 复制小说产出..." -ForegroundColor Yellow
 $novelSrc = Join-Path $REPO_ROOT "novel"
-$novelDst = if ($env:QCLAW_PROJECT_DIR) { $env:QCLAW_PROJECT_DIR } else { Join-Path $HOME_DIR "Desktop" "QClaw产出文件" }
+$novelDst = if ($env:QCLAW_PROJECT_DIR) { $env:QCLAW_PROJECT_DIR } else { Join-Path $HOME_DIR "Desktop" "项目产出" }
 if (-not (Test-Path $novelDst)) { New-Item -ItemType Directory -Path $novelDst -Force | Out-Null }
 if (Test-Path $novelSrc) {
     Copy-Item (Join-Path $novelSrc "*") $novelDst -Recurse -Force
