@@ -37,3 +37,6 @@ jobs:
 
       - name: Run functional tests
         run: node --test tests/*.test.mjs
+
+      - name: Run eval harness (deterministic regression + drift)
+        run: node scripts/eval/eval.mjs

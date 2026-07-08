@@ -17,10 +17,12 @@ const REPO_ROOT = process.cwd();
 const ALLOWED = new Set(['skill', 'agent']);
 
 export function kebab(name) {
+  // Keep every Unicode letter/number (Latin + CJK + accented + digits) so
+  // non-English skill/agent names slug cleanly instead of collapsing to "".
   return name
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '');
 }
 

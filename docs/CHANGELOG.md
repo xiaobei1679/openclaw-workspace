@@ -5,6 +5,17 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Eval 评估支柱 + 修复 Reviewer 缺失模块 · 本地，未推送）
+- 新增 **Eval 评估工具** `scripts/eval/eval.mjs`：把"评估支柱"做成零依赖、可 CI 门禁的**回归 + 漂移监控**工具（特性级）：
+  - 第 1 层（确定性，常驻 CI、零密钥）：对仓库既有纯函数 agent（router / observer / scaffold）的固定输入断言"不变量"——确定性、契约形态、禁路径守卫、密钥扫描正负例、slug 归一化；任一失败即红
+  - 第 2 层（LLM-as-judge，可选门）：仅当配置 `EVAL_LLM_BASE_URL` 才跑，对样例 agent 输出按 rubric 打 1-5 分；CI 不配则不跑、绝不阻塞
+  - 漂移监控：`--baseline` 快照各用例产物 → `scripts/eval/.eval-baseline.json`（已 gitignore）；`--compare` 与基线比（token Jaccard 作为语义相似度代理），相似度 <0.98 即告警
+- 新增 `tests/eval.test.mjs`（11 个测试）：覆盖全部确定性用例 + similarity 同输入=1 + compareBaseline 无漂移/有漂移
+- **修复既有缺陷**：`scripts/ci/reviewer.mjs` 此前被 `tests/reviewer.test.mjs` 引用却从未创建，导致测试套件长期 4 个失败；本次补建该"Reviewer Agent"（聚合 syntax / config / observer / tests 得出结构化判定 `runReviewer / verdict / formatReport / runCheck`），套件恢复全绿（75/75）
+- 接入：`Makefile` 新增 `eval` 与 `reviewer` 目标并加入 `healthcheck`；`.github/workflows/node-check.yml` 在测试后增加 `node scripts/eval/eval.mjs`；`.gitignore` 忽略基线快照
+- 调研依据：Anthropic《Demystifying evals for AI agents》(2026-01) 确定性断言与概率性断言并重；Google 多智能体评估 codelab 自动化回归管线；attest-framework 把确定性断言作为一等公民；zylos Agent-native CI 用 Shadow Mode 做漂移监控
+- 测试套件恢复全绿（**75/75**，此前 4 个长期失败）
+
 ### 2026-07-09（Router Agent 任务路由冲刺 · 本地，未推送）
 - 新增 **Router Agent** `scripts/agent/router.mjs`：纯函数、零密钥的**确定性任务规划/路由**器，无需 LLM：
   - `classifyIntent()` / `scoreIntent()`：识别主导意图（research / coding / writing / review / data， fallback general），并给出置信度（high/medium/low）

@@ -130,8 +130,10 @@ export function runReview({ files = [], contractJson = '', root = ROOT } = {}) {
 
   for (const f of files) {
     if (!TEXT_RE.test(f)) continue;
-    // The test suite contains mock credentials by design — never flag it.
+    // The test suite, eval harness, and example fixtures contain mock
+    // credentials/keys by design — never flag them as real secrets.
     if (f.startsWith('tests/') || f.split('/').includes('tests')) continue;
+    if (f.startsWith('scripts/eval/') || f.split('/').includes('examples')) continue;
     let text;
     try {
       text = readFileSync(resolve(root, f), 'utf8');
