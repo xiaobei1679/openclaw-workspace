@@ -1,0 +1,40 @@
+# Contributing to openclaw-workspace
+
+This repo is a turnkey OpenClaw multi-agent workspace. Both humans and AI agents
+are welcome to contribute. The rules below apply to everyone (and are enforced
+by `AGENTS.md` for agents).
+
+## 1. Set up locally
+```bash
+git clone <your-fork>
+cd openclaw-workspace
+cp .env.example .env
+bash deploy/install.sh          # or: powershell -ExecutionPolicy Bypass deploy/install.ps1
+```
+
+## 2. Before you open a PR
+- Run `node --check` on every `.js` file you touched (the CI does this too):
+  ```bash
+  node --check workspace/.learnings/scripts/*.js
+  ```
+- Make sure **no hardcoded absolute paths** appear (no `C:\Users\...`, `/Users/...`).
+- Make sure you did **not** commit personal data or secrets:
+  - Personal data (gitignored): `novel/`, `gbrain/`, `workspace/memory/`, `workspace/USER.md`
+  - Secrets (gitignored): `config/openclaw.json`, `.env`
+  - Edit the `.example` versions instead of the real (gitignored) files.
+
+## 3. Open a PR
+- Fill in the PR template checklist.
+- The `Node Syntax Check` GitHub Action runs automatically on every PR and must
+  pass before merge.
+
+## 4. Good first issues
+- See the **Agent task** / **Bug report** / **Feature request** issue templates
+  under the "New issue" button — they are structured so an agent can pick one up
+  directly.
+
+## Conventions
+- JS comments use `//`, never `#` (only `#!` shebang is allowed).
+- Keep scripts cross-platform (no `2>nul`, `where`, `findstr`).
+- Reuse helpers from `workspace/.learnings/scripts/lib/common.js`.
+- When editing `.ps1`: no ternary `? :`; save as UTF-8 **with BOM**.
