@@ -2,12 +2,20 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test run-agent install verify help
+.PHONY: check test validate healthcheck run-agent install verify help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
 
-test:    ## Run functional smoke tests (node:test, auto-discovers tests/)
+test:    ## Run functional smoke tests (node:test)
+	$(NODE) --test tests/*.test.mjs
+
+validate: ## Validate published template configs (config-first gate)
+	$(NODE) scripts/ci/validate-config.mjs
+
+healthcheck: ## Run check + validate + test together
+	$(NODE) scripts/ci/check-syntax.mjs
+	$(NODE) scripts/ci/validate-config.mjs
 	$(NODE) --test tests/*.test.mjs
 
 run-agent: ## Run the autonomous agent locally (keyless with Ollama)

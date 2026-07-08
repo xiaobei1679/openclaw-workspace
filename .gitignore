@@ -43,6 +43,12 @@ build/
 瓶颈检测/
 心跳日志/
 
+# Agent run traces (observability; regenerated each run, not published)
+.agent-runs/
+
+# Agent temp comment file
+.agent-comment.tmp
+
 # ===== 用户私有数据（非框架，本地保留、不随公开仓库发布）=====
 # 以下目录是项目所有者本人的小说/日志/知识库/共享池等真实产物，
 # 含个人路径（如 C:\Users\Administrator），不随框架发布。

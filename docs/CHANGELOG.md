@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（质量冲刺 · 本地，未推送）
+- 新增 `QUICKSTART.md`：5 分钟从零跑起（本地零密钥 + 框架部署两种路径）
+- 新增 `scripts/ci/validate-config.mjs` + `tests/validate-config.test.mjs`：配置优先（config-first）质量门禁，校验发布版 `.env.example` 与 `config/openclaw.json.example` 形态
+- 新增 `examples/`：`sample-skill/`（通用技能模板，含可运行 `run.mjs`）+ `agent-task-sample.md`（展示智能体契约格式）
+- `scripts/agent/respond.mjs`：增加轻量运行日志 `.agent-runs/*.jsonl`（可观测性种子，非致命，已 gitignore），贯穿任务/写文件/校验/提交/错误节点
+- `Makefile` / `scripts/dev.sh` / `scripts/dev.ps1`：新增 `validate` 与 `healthcheck`（check+validate+test 一气呵成）命令
+- `AGENTS.md` / `README.md` / `ROADMAP.md` / `CHANGELOG.md`：接新内容与入口
+- 设计依据：调研生产级 agent 框架标杆（配置校验、评估/可观测性、示例模板、快速上手）
+
 ### 2026-07-08（自主迭代 · 本地）
 - 新增 `scripts/ci/check-syntax.mjs`：统一的 `node --check` 扫描（CI / `make check` / 测试共用）
 - 新增 `tests/smoke.test.mjs`：覆盖真实导出逻辑（`safePath` / `parseFiles` / 语法扫描）的功能冒烟测试

@@ -13,6 +13,14 @@ case "${1:-help}" in
   test)
     "$NODE_BIN" --test tests/*.test.mjs
     ;;
+  validate)
+    "$NODE_BIN" scripts/ci/validate-config.mjs
+    ;;
+  healthcheck)
+    "$NODE_BIN" scripts/ci/check-syntax.mjs
+    "$NODE_BIN" scripts/ci/validate-config.mjs
+    "$NODE_BIN" --test tests/*.test.mjs
+    ;;
   run-agent)
     AGENT_LOCAL=1 \
     AGENT_TASK_FILE="${AGENT_TASK_FILE:-scripts/agent/task.example.md}" \
@@ -24,7 +32,7 @@ case "${1:-help}" in
     ./deploy/install.sh
     ;;
   *)
-    echo "Usage: dev.sh {check|test|run-agent|install}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install}"
     exit 1
     ;;
 esac

@@ -14,12 +14,17 @@
 - Contract-based agent interaction spec (`docs/AGENT_CONTRACT.md`)
 - Unified dev commands (`Makefile`, `scripts/dev.sh`, `scripts/dev.ps1`)
 - `SECURITY.md`
+- Examples gallery (`examples/`): copy-paste skill template + sample agent task
+- Config validation gate (`scripts/ci/validate-config.mjs` + `tests/validate-config.test.mjs`) — config-first quality gate
+- Lightweight run tracing (`scripts/agent/respond.mjs` → `.agent-runs/*.jsonl`) — production-grade observability seed
+- `QUICKSTART.md` + `make healthcheck` (check + validate + test in one pass)
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
-- **Examples gallery** (`examples/`): copy-paste agent configs, a minimal end-to-end demo
+- **Eval harness**: LLM-as-judge regression tests over agent outputs, CI-gated (the "evaluation" pillar)
+- **Skill/agent scaffolder**: `scripts/scaffold` that generates a new agent/skill from a template (lowers contribution friction)
 - **Router Agent**: a planner that decomposes a task and routes to specialist agents
 - **Observer Agent**: automatically review PRs for rule violations (paths, secrets, `node --check`)
 - **Drift monitoring**: shadow-mode comparison of agent outputs (semantic similarity + schema check)

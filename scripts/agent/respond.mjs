@@ -21,7 +21,7 @@
 //   AGENT_LOCAL    - set to 1 to run locally
 //   AGENT_TASK_FILE- (local) path to a markdown task file (first line = title)
 
-import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, rmSync, existsSync, mkdirSync, appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync, execSync } from 'node:child_process';
 import { resolve, relative, isAbsolute } from 'node:path';
@@ -42,6 +42,23 @@ const IS_LOCAL_LLM =
 const HAS_KEY = !!LLM_API_KEY || IS_LOCAL_LLM;
 
 let ISSUE_NUMBER = '';
+
+// --- Lightweight observability: append-only JSONL run trace (non-fatal). ---
+// Traces go to .agent-runs/run-<ts>.jsonl (gitignored). This is the minimal
+// "tracing" pillar from production-grade agent practice — cheap, offline, no deps.
+const RUN_LOG_DIR = resolve(REPO_ROOT, '.agent-runs');
+const RUN_ID = Date.now();
+function trace(stage, data = {}) {
+  try {
+    mkdirSync(RUN_LOG_DIR, { recursive: true });
+    appendFileSync(
+      resolve(RUN_LOG_DIR, `run-${RUN_ID}.jsonl`),
+      JSON.stringify({ t: new Date().toISOString(), stage, ...data }) + '\n'
+    );
+  } catch {
+    /* tracing must never break the agent */
+  }
+}
 
 function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8' });
@@ -161,6 +178,7 @@ async function main() {
   const task = getTask();
   if (!task) return;
   ISSUE_NUMBER = task.number;
+  trace('task', { title: task.title, local: task.local, number: task.number });
 
   if (!HAS_KEY) {
     const guide =
@@ -231,6 +249,7 @@ async function main() {
     writeFileSync(full, f.content);
     changed.push(f.path);
   }
+  trace('files_written', { changed });
 
   const tracked = execSync('git ls-files', { encoding: 'utf8' })
     .split('\n')
@@ -239,8 +258,10 @@ async function main() {
     nodeCheck([...tracked, ...changed]);
   } catch (e) {
     comment(`⚠️ 改动未通过 node --check，已中止：${e.message}`);
+    trace('check_failed', { message: e.message });
     return;
   }
+  trace('check_pass');
 
   if (task.local) {
     const branch = `agent/local-${Date.now()}`;
@@ -251,6 +272,7 @@ async function main() {
       { stdio: 'pipe' }
     );
     console.log(`✅ 本地改动已提交到分支 ${branch}，请人工 review 后再 push / 开 PR。`);
+    trace('committed', { branch, local: true });
     return;
   }
 
@@ -276,12 +298,14 @@ async function main() {
   ]).trim();
 
   comment(`✅ 已生成改动并通过 node --check，开 PR：${prUrl}（请人工审核后合并）`);
+  trace('pr_created', { branch, url: prUrl });
 }
 
 // Only run when executed as the main module (not when imported by tests).
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((e) => {
     console.error('Agent error:', e);
+    trace('error', { message: e.message });
     try {
       comment(`⚠️ 智能体执行出错：${e.message}`);
     } catch {}

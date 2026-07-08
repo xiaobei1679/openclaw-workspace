@@ -15,6 +15,16 @@ switch ($args[0]) {
     if ($files.Count -eq 0) { Write-Host 'no tests found'; exit 0 }
     & $Node --test $files.FullName
   }
+  'validate' {
+    & $Node scripts/ci/validate-config.mjs
+  }
+  'healthcheck' {
+    & $Node scripts/ci/check-syntax.mjs
+    & $Node scripts/ci/validate-config.mjs
+    $files = Get-ChildItem -Path tests -Filter *.test.mjs -Recurse
+    if ($files.Count -eq 0) { Write-Host 'no tests found'; exit 0 }
+    & $Node --test $files.FullName
+  }
   'run-agent' {
     $env:AGENT_LOCAL = '1'
     if (-not $env:AGENT_TASK_FILE) {
@@ -32,7 +42,7 @@ switch ($args[0]) {
     & ./deploy/install.sh
   }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|run-agent|install}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install}'
     exit 1
   }
 }
