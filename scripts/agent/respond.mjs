@@ -1,16 +1,25 @@
 // scripts/agent/respond.mjs
 // Autonomous agent responder for openclaw-workspace.
-// Triggered by GitHub Actions on issue/issue_comment events.
-// Reads AGENTS.md, asks an OpenAI-compatible LLM to produce file changes,
-// applies them, runs `node --check` on all scripts, and opens a PR (never merges).
 //
-// Required env (provided by the workflow):
-//   GITHUB_TOKEN   - auto-provided by Actions (needs issues/contents/pull-requests write)
-//   EVENT_PATH     - path to the webhook payload JSON
-//   REPO           - owner/name
-//   LLM_API_KEY    - user-supplied secret (OpenAI-compatible)
+// Two run modes:
+//   1) GitHub Actions (cloud): triggered by issue/issue_comment webhook. Reads
+//      EVENT_PATH payload, comments on the issue, opens a PR via gh.
+//   2) Local: set AGENT_LOCAL=1 and AGENT_TASK_FILE=<path.md> (or AGENT_TASK=<text>).
+//      Reads the task from a local file, applies changes to the working tree,
+//      runs `node --check`, and commits to a local branch (no GitHub interaction).
+//
+// Both modes ask an OpenAI-compatible LLM (LLM_API_KEY + optional LLM_BASE_URL/LLM_MODEL)
+// to produce file changes. Without LLM_API_KEY they only print/comment setup guidance.
+//
+// Required env:
+//   GITHUB_TOKEN   - (cloud only) auto-provided by Actions
+//   EVENT_PATH     - (cloud only) webhook payload path
+//   REPO           - (cloud only) owner/name
+//   LLM_API_KEY    - OpenAI-compatible key (user-supplied secret)
 //   LLM_BASE_URL   - optional, default https://api.openai.com/v1
 //   LLM_MODEL      - optional, default gpt-4o-mini
+//   AGENT_LOCAL    - set to 1 to run locally
+//   AGENT_TASK_FILE- (local) path to a markdown task file (first line = title)
 
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
@@ -23,7 +32,8 @@ const EVENT_PATH = process.env.EVENT_PATH;
 const LLM_API_KEY = process.env.LLM_API_KEY;
 const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
-const FORBIDDEN = new Set(['config/openclaw.json', '.env', 'config/openclaw.json.example'.replace('.example', '')]);
+const IS_LOCAL = process.env.AGENT_LOCAL === '1';
+const FORBIDDEN = new Set(['config/openclaw.json', '.env']);
 
 let ISSUE_NUMBER = '';
 
@@ -32,15 +42,18 @@ function gh(args) {
 }
 
 function comment(body) {
-  if (!ISSUE_NUMBER) return;
-  const tmp = resolve(REPO_ROOT, '.agent-comment.tmp');
-  writeFileSync(tmp, body);
-  try {
-    gh(['issue', 'comment', String(ISSUE_NUMBER), '--body-file', tmp]);
-  } catch (e) {
-    console.error('comment failed:', e.message);
-  } finally {
-    rmSync(tmp, { force: true });
+  if (ISSUE_NUMBER) {
+    const tmp = resolve(REPO_ROOT, '.agent-comment.tmp');
+    writeFileSync(tmp, body);
+    try {
+      gh(['issue', 'comment', String(ISSUE_NUMBER), '--body-file', tmp]);
+    } catch (e) {
+      console.error('comment failed:', e.message);
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  } else {
+    console.log('[agent comment]\n' + body);
   }
 }
 
@@ -49,7 +62,7 @@ function loadPayload() {
   return JSON.parse(readFileSync(EVENT_PATH, 'utf8'));
 }
 
-// Decide whether this event should trigger the agent.
+// Cloud: decide whether this event should trigger the agent.
 function determineTrigger(payload) {
   const issue = payload.issue;
   if (!issue || issue.pull_request) return null; // skip PRs
@@ -60,12 +73,31 @@ function determineTrigger(payload) {
   if (payload.action === 'created' && payload.comment) {
     const body = payload.comment.body || '';
     if (body.includes('/agent')) {
-      // Avoid reacting to our own (or any bot's) comments -> no loops.
-      if (payload.comment.user && payload.comment.user.type === 'Bot') return null;
+      if (payload.comment.user && payload.comment.user.type === 'Bot') return null; // no loops
       return issue;
     }
   }
   return null;
+}
+
+// Resolve the task to work on. Returns null when there's nothing to do.
+function getTask() {
+  if (IS_LOCAL) {
+    const f = process.env.AGENT_TASK_FILE;
+    const raw =
+      f && existsSync(f) ? readFileSync(f, 'utf8') : process.env.AGENT_TASK || '';
+    const lines = raw.split('\n');
+    const title = (lines[0] || '').replace(/^#\s*/, '').trim() || 'Local agent task';
+    const body = lines.slice(1).join('\n').trim();
+    return { title, body, number: '', local: true };
+  }
+  const payload = loadPayload();
+  const issue = determineTrigger(payload);
+  if (!issue) {
+    console.log('No agent trigger. Exiting.');
+    return null;
+  }
+  return { title: issue.title, body: issue.body || '', number: issue.number, local: false };
 }
 
 async function callLLM(system, user) {
@@ -118,24 +150,17 @@ function nodeCheck(paths) {
 }
 
 async function main() {
-  const payload = loadPayload();
-  const issue = determineTrigger(payload);
-  if (!issue) {
-    console.log('No agent trigger. Exiting.');
-    return;
-  }
-  ISSUE_NUMBER = issue.number;
+  const task = getTask();
+  if (!task) return;
+  ISSUE_NUMBER = task.number;
 
   if (!LLM_API_KEY) {
-    comment(
+    const guide =
       `🤖 **Agent Responder 已就绪，但未配置 LLM 密钥。**\n\n` +
-      `仓库管理员需在 **Settings → Secrets and variables → Actions** 添加：\n` +
-      `- \`LLM_API_KEY\`（必填，OpenAI 兼容）\n` +
-      `- \`LLM_BASE_URL\`（可选，默认 https://api.openai.com/v1 ；可指向 DeepSeek / 通义等廉价端点）\n` +
-      `- \`LLM_MODEL\`（可选，默认 gpt-4o-mini）\n\n` +
-      `配置后，在任意 issue 评论 \`/agent\` 或给 issue 打 \`agent-task\` 标签，我就会读 AGENTS.md 自动改代码并开 PR 供人工审核。\n\n` +
-      `（本评论由 Agent Responder 自动发出）`
-    );
+      `添加 OpenAI 兼容的 \`LLM_API_KEY\`（云端在 Settings → Secrets；本地用环境变量或 .env）。\n` +
+      `可选 \`LLM_BASE_URL\`（默认 https://api.openai.com/v1，可指向 DeepSeek/通义等廉价端点）、\`LLM_MODEL\`（默认 gpt-4o-mini）。\n\n` +
+      `触发方式：云端给 issue 打 \`agent-task\` 标签或评论 \`/agent\`；本地设 \`AGENT_LOCAL=1\` + \`AGENT_TASK_FILE\`。`;
+    comment(guide);
     return;
   }
 
@@ -162,11 +187,13 @@ async function main() {
   const user =
     `Repository file tree:\n${tree}\n\n` +
     `AGENTS.md:\n${agentsMd}\n\n` +
-    `TASK (issue #${issue.number}):\nTitle: ${issue.title}\n\nBody:\n${issue.body || '(empty)'}\n\n` +
+    `TASK${task.number ? ' (issue #' + task.number + ')' : ' (local)'}\n` +
+    `Title: ${task.title}\n\nBody:\n${task.body || '(empty)'}\n\n` +
     `Produce the changes now.`;
 
   comment(
-    `🤖 收到，正在根据 AGENTS.md 分析任务 #${issue.number} 并生成改动…（将开 PR 供人工审核，不会自动合并）`
+    `🤖 收到，正在根据 AGENTS.md 分析任务${task.number ? ' #' + task.number : '（本地）'} 并生成改动…` +
+      (task.local ? '' : '（将开 PR 供人工审核，不会自动合并）')
   );
 
   let text;
@@ -200,16 +227,29 @@ async function main() {
   try {
     nodeCheck([...tracked, ...changed]);
   } catch (e) {
-    comment(`⚠️ 改动未通过 node --check，已中止开 PR：\n\`\`\`\n${e.message}\n\`\`\``);
+    comment(`⚠️ 改动未通过 node --check，已中止：${e.message}`);
     return;
   }
 
-  const branch = `agent/issue-${issue.number}`;
+  if (task.local) {
+    const branch = `agent/local-${Date.now()}`;
+    execSync(`git checkout -B ${branch}`);
+    execSync('git add -A');
+    execSync(
+      `git -c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: ${task.title}"`,
+      { stdio: 'pipe' }
+    );
+    console.log(`✅ 本地改动已提交到分支 ${branch}，请人工 review 后再 push / 开 PR。`);
+    return;
+  }
+
+  const branch = `agent/issue-${task.number}`;
   execSync(`git checkout -B ${branch}`);
   execSync('git add -A');
-  execSync(`git -c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: address #${issue.number}"`, {
-    stdio: 'pipe',
-  });
+  execSync(
+    `git -c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: address #${task.number}"`,
+    { stdio: 'pipe' }
+  );
   execSync(`git push origin ${branch}`);
   const prUrl = gh([
     'pr',
@@ -219,9 +259,9 @@ async function main() {
     '--base',
     'main',
     '--title',
-    `agent: #${issue.number} ${issue.title}`.slice(0, 60),
+    `agent: #${task.number} ${task.title}`.slice(0, 60),
     '--body',
-    `Auto-generated by Agent Responder for #${issue.number}.\n\nCloses #${issue.number}`,
+    `Auto-generated by Agent Responder for #${task.number}.\n\nCloses #${task.number}`,
   ]).trim();
 
   comment(`✅ 已生成改动并通过 node --check，开 PR：${prUrl}（请人工审核后合并）`);

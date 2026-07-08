@@ -64,6 +64,9 @@ AI agent manage issues autonomously:
 - Activation requires a repo secret **`LLM_API_KEY`** (OpenAI-compatible; set `LLM_BASE_URL`
   / `LLM_MODEL` to point at cheaper endpoints). Without it, the workflow only posts a
   "how to enable" comment.
+- **Local mode** (no GitHub needed): set `AGENT_LOCAL=1` and `AGENT_TASK_FILE=path.md`,
+  then `node scripts/agent/respond.mjs`. It reads the task from the file, applies changes
+  to your working tree, runs `node --check`, and commits to a local branch for you to review.
 
 ---
 # 中文说明（详细版）

@@ -45,4 +45,8 @@ The repo ships an agent pipeline (`.github/workflows/agent-respond.yml` + `scrip
 - An AI agent reads `AGENTS.md`, edits code, runs `node --check`, and opens a PR (human review required — it never auto-merges).
 - **To enable:** add repo secret `LLM_API_KEY` (OpenAI-compatible). Optionally `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`) to use cheaper endpoints.
 - Without the key, the workflow only posts a "how to enable" guide comment and takes no actions.
+- **Local mode** (no GitHub needed): set `AGENT_LOCAL=1` + `AGENT_TASK_FILE=path.md` (see
+  `scripts/agent/task.example.md`), then `node scripts/agent/respond.mjs`. It reads the task
+  from the file, applies changes to your working tree, runs `node --check`, and commits to a
+  local branch for you to review — no issue, secret, or PR required.
 
