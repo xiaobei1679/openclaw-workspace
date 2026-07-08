@@ -26,12 +26,27 @@ configure it via environment variables, and run/contribute without editing code.
 ```bash
 cp .env.example .env                      # fill QCLAW_PROJECT_DIR etc. as needed
 bash deploy/install.sh                    # or: powershell -ExecutionPolicy Bypass deploy/install.ps1
-node --check workspace/.learnings/scripts/*.js   # syntax check (CI runs this too)
+make check                                # syntax check all scripts (alias: scripts/dev.sh check)
+node --test tests/                        # functional smoke tests (safePath / parseFiles / checkAll)
 ```
+
+## Tests
+- `tests/smoke.test.mjs` — functional tests over the **real** exported logic
+  (`safePath`, `parseFiles`, and the `node --check` sweep in `scripts/ci/check-syntax.mjs`).
+  Run with `node --test tests/` or `make test`.
+- `scripts/ci/check-syntax.mjs` — the canonical syntax gate reused by CI, `make check`, and the tests.
+
+## See also
+- `docs/AGENT_CONTRACT.md` — the agent interaction contract (task format, change JSON, path safety).
+- `docs/ARCHITECTURE.md` — system architecture and agent team.
+- `ROADMAP.md` — what's done / in progress / next.
+- `SECURITY.md` — vulnerability reporting and secrets policy.
+- `scripts/dev.sh` / `scripts/dev.ps1` / `Makefile` — everyday commands.
 
 ## Contribution flow
 1. Fork / branch → make your change.
-2. **Run `node --check` on every script you touched** and ensure it passes.
+2. **Run `node --check` on every script you touched** and ensure it passes
+   (`make check`). Also run `node --test tests/` for the functional smoke tests.
 3. Open a PR → the `Node Syntax Check` GitHub Action runs automatically and **must be green** to merge.
 
 ## Hard rules (violations get blocked by CI or review)

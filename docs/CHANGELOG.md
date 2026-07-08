@@ -1,5 +1,27 @@
 # 更新日志
 
+> 说明：本文件记录**工作区内部**的项目演进（异兽学院 / 阴间考编等）。
+> 下方「openclaw-workspace 公开框架」段记录**本仓库（对外开源模板）**自身的迭代。
+
+## openclaw-workspace 公开框架（仓库级更新）
+
+### 2026-07-08（自主迭代 · 本地）
+- 新增 `scripts/ci/check-syntax.mjs`：统一的 `node --check` 扫描（CI / `make check` / 测试共用）
+- 新增 `tests/smoke.test.mjs`：覆盖真实导出逻辑（`safePath` / `parseFiles` / 语法扫描）的功能冒烟测试
+- `scripts/agent/respond.mjs`：导出 `safePath` / `parseFiles` 并加主模块守卫，使测试可安全导入；`node` 调用改用 `process.execPath`
+- 新增契约式交互规范 `docs/AGENT_CONTRACT.md`（任务格式 / 改动 JSON / 路径安全 / 反馈契约）
+- 新增开发者命令入口：`Makefile` + `scripts/dev.sh` + `scripts/dev.ps1`（`check` / `test` / `run-agent` / `install`）
+- 新增 `SECURITY.md`、`ROADMAP.md`
+- `AGENTS.md` / `README.md`：补充测试、契约、路线图、徽章与「自主智能体（本地零密钥）」说明
+- 设计依据：全网调研多智能体最佳实践（契约式交互、Router/Observer、共享记忆、增量灰度、强仓库文档结构）
+
+### 2026-07-08（早期）
+- 去个人化改造：零硬编码路径、`.example` 模板、`.gitignore` 排除本地数据
+- 双语 README + 仓库设为 Template
+- `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` + PR / Issue 模板
+- GitHub Actions：`node-check`（语法）+ `agent-respond`（自动开 PR）
+- 本地免密钥模式（指向本机 Ollama）
+
 ## 2026-07-08
 
 ### 项目转向

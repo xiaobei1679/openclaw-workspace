@@ -1,5 +1,10 @@
 # AI Multi-Agent Workspace
 
+![CI](https://github.com/xiaobei1679/openclaw-workspace/actions/workflows/node-check.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-8%20passing-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Template](https://img.shields.io/badge/repo-Template-blueviolet)
+
 > 一套**开箱即用的 AI 多智能体工作环境**：知识库、技能系统、约束规则、记忆管理、自动化脚本与项目产出一体化。
 > 任何人 clone / 解压后，配置几个环境变量即可直接运行——**无需改任何代码**。
 
@@ -51,6 +56,21 @@ chmod +x deploy/install.sh
 ```
 
 部署脚本会：备份已有配置 → 复制工作区 → 复制配置模板 → 创建项目目录。最后运行校验脚本确认部署成功。
+
+---
+
+## 🤖 自主智能体（本地，零密钥）
+
+本仓库内置一个自动智能体（`scripts/agent/respond.mjs` + `.github/workflows/agent-respond.yml`）：
+
+- **本地模式（推荐，零成本）**：装好 [Ollama](https://ollama.com) 后 `ollama pull qwen2.5-coder:3b && ollama serve`，然后：
+  ```bash
+  AGENT_LOCAL=1 AGENT_TASK_FILE=scripts/agent/task.example.md \
+  LLM_BASE_URL=http://127.0.0.1:11434/v1 node scripts/agent/respond.mjs
+  ```
+  它会读任务、改代码、跑 `node --check`、提交到本地分支 `agent/local-<时间戳>` 等你审。**无需任何密钥、可离线。**
+- **云端模式**：给 issue 打 `agent-task` 标签或评论 `/agent`，自动开 PR 供你审核（绝不自动合并）。需配置 LLM 后端（本地 Ollama 在云端访问不到，可用 DeepSeek/通义/Moonshot 的免费额度密钥）。
+- 交互契约见 [`docs/AGENT_CONTRACT.md`](docs/AGENT_CONTRACT.md)。
 
 ---
 
@@ -217,6 +237,21 @@ chmod +x deploy/install.sh
 ```
 
 The deploy script: backs up existing config → copies the workspace → copies config templates → creates project directories. A verify script then confirms success.
+
+---
+
+## 🤖 Autonomous agent (local, zero key)
+
+This repo ships an autonomous agent (`scripts/agent/respond.mjs` + `.github/workflows/agent-respond.yml`):
+
+- **Local mode (recommended, zero-cost)**: install [Ollama](https://ollama.com), then `ollama pull qwen2.5-coder:3b && ollama serve`, then:
+  ```bash
+  AGENT_LOCAL=1 AGENT_TASK_FILE=scripts/agent/task.example.md \
+  LLM_BASE_URL=http://127.0.0.1:11434/v1 node scripts/agent/respond.mjs
+  ```
+  It reads the task, edits code, runs `node --check`, and commits to a local branch `agent/local-<ts>` for your review. **No key required, runs offline.**
+- **Cloud mode**: label an issue `agent-task` or comment `/agent` — it opens a PR for your review (never auto-merges). Needs an LLM backend (a local Ollama is unreachable from GitHub's cloud; use a free DeepSeek/Qwen/Moonshot key instead).
+- The interaction contract is in [`docs/AGENT_CONTRACT.md`](docs/AGENT_CONTRACT.md).
 
 ## 📁 Repository structure
 

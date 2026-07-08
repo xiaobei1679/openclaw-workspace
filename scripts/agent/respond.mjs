@@ -22,6 +22,7 @@
 //   AGENT_TASK_FILE- (local) path to a markdown task file (first line = title)
 
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { execFileSync, execSync } from 'node:child_process';
 import { resolve, relative, isAbsolute } from 'node:path';
 
@@ -125,7 +126,7 @@ async function callLLM(system, user) {
   return data.choices?.[0]?.message?.content || '';
 }
 
-function parseFiles(text) {
+export function parseFiles(text) {
   const m = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/);
   const raw = (m ? m[1] : text).trim();
   const obj = JSON.parse(raw);
@@ -134,7 +135,7 @@ function parseFiles(text) {
   return obj;
 }
 
-function safePath(p) {
+export function safePath(p) {
   if (!p || isAbsolute(p) || p.includes('..')) throw new Error('invalid path: ' + p);
   const full = resolve(REPO_ROOT, p);
   const rel = relative(REPO_ROOT, full);
@@ -148,7 +149,7 @@ function nodeCheck(paths) {
   for (const f of paths) {
     if (/\.(js|mjs|cjs)$/i.test(f)) {
       try {
-        execFileSync('node', ['--check', f], { stdio: 'pipe' });
+        execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
       } catch (e) {
         throw new Error(`node --check failed on ${f}:\n${e.stderr || e.message}`);
       }
@@ -277,10 +278,13 @@ async function main() {
   comment(`✅ 已生成改动并通过 node --check，开 PR：${prUrl}（请人工审核后合并）`);
 }
 
-main().catch((e) => {
-  console.error('Agent error:', e);
-  try {
-    comment(`⚠️ 智能体执行出错：${e.message}`);
-  } catch {}
-  process.exit(0); // never fail the workflow run hard
-});
+// Only run when executed as the main module (not when imported by tests).
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main().catch((e) => {
+    console.error('Agent error:', e);
+    try {
+      comment(`⚠️ 智能体执行出错：${e.message}`);
+    } catch {}
+    process.exit(0); // never fail the workflow run hard
+  });
+}
