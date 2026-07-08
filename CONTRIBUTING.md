@@ -43,10 +43,18 @@ bash deploy/install.sh          # or: powershell -ExecutionPolicy Bypass deploy/
 The repo ships an agent pipeline (`.github/workflows/agent-respond.yml` + `scripts/agent/respond.mjs`):
 - Open an issue with the `agent-task` label, or comment `/agent` on any issue.
 - An AI agent reads `AGENTS.md`, edits code, runs `node --check`, and opens a PR (human review required — it never auto-merges).
-- **To enable:** add repo secret `LLM_API_KEY` (OpenAI-compatible). Optionally `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`) to use cheaper endpoints.
-- Without the key, the workflow only posts a "how to enable" guide comment and takes no actions.
+
+**LLM backend (pick one):**
+- **Local, zero key (zero-budget):** `ollama pull qwen2.5-coder:3b && ollama serve`, then set
+  `LLM_BASE_URL=http://127.0.0.1:11434/v1` (no `LLM_API_KEY` needed — auto-detected as local).
+- **Free hosted key:** DeepSeek / Qwen / Moonshot free tiers → `LLM_API_KEY` + matching `LLM_BASE_URL`
+  (on GitHub, store as a repo Secret).
+- **OpenAI:** `LLM_API_KEY` (defaults to `api.openai.com/v1`).
+- Without ANY usable LLM, the agent only posts a "how to enable" guide comment and takes no actions.
+
 - **Local mode** (no GitHub needed): set `AGENT_LOCAL=1` + `AGENT_TASK_FILE=path.md` (see
   `scripts/agent/task.example.md`), then `node scripts/agent/respond.mjs`. It reads the task
   from the file, applies changes to your working tree, runs `node --check`, and commits to a
-  local branch for you to review — no issue, secret, or PR required.
+  local branch for you to review — no issue, secret, or PR required. With the Ollama backend
+  above this runs fully offline.
 

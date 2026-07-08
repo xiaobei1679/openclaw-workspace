@@ -34,6 +34,11 @@ const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'https://api.openai.com/v1').r
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
 const IS_LOCAL = process.env.AGENT_LOCAL === '1';
 const FORBIDDEN = new Set(['config/openclaw.json', '.env']);
+// When the LLM endpoint is a local/Ollama server, no paid key is required.
+const IS_LOCAL_LLM =
+  /localhost|127\.0\.0\.1|0\.0\.0\.0|ollama/i.test(LLM_BASE_URL) ||
+  /ollama/i.test(LLM_MODEL);
+const HAS_KEY = !!LLM_API_KEY || IS_LOCAL_LLM;
 
 let ISSUE_NUMBER = '';
 
@@ -101,9 +106,11 @@ function getTask() {
 }
 
 async function callLLM(system, user) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (LLM_API_KEY) headers.Authorization = `Bearer ${LLM_API_KEY}`;
   const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LLM_API_KEY}` },
+    headers,
     body: JSON.stringify({
       model: LLM_MODEL,
       temperature: 0.2,
@@ -154,11 +161,14 @@ async function main() {
   if (!task) return;
   ISSUE_NUMBER = task.number;
 
-  if (!LLM_API_KEY) {
+  if (!HAS_KEY) {
     const guide =
-      `🤖 **Agent Responder 已就绪，但未配置 LLM 密钥。**\n\n` +
-      `添加 OpenAI 兼容的 \`LLM_API_KEY\`（云端在 Settings → Secrets；本地用环境变量或 .env）。\n` +
-      `可选 \`LLM_BASE_URL\`（默认 https://api.openai.com/v1，可指向 DeepSeek/通义等廉价端点）、\`LLM_MODEL\`（默认 gpt-4o-mini）。\n\n` +
+      `🤖 **Agent Responder 已就绪，但未配置 LLM。**\n\n` +
+      `三种方式启用（任选其一）：\n` +
+      `1) 本地免密钥：装好 Ollama 并 \`ollama serve\`，设 \`LLM_BASE_URL=http://127.0.0.1:11434/v1\`（无需 key）。\n` +
+      `2) 免费托管密钥：DeepSeek / 通义 / Moonshot 等免费额度，设 \`LLM_API_KEY\` + 对应 \`LLM_BASE_URL\`（云端在 Settings → Secrets）。\n` +
+      `3) OpenAI：设 \`LLM_API_KEY\`（默认指向 api.openai.com）。\n` +
+      `可选 \`LLM_MODEL\`（本地默认 qwen2.5-coder:3b；云端默认 gpt-4o-mini）。\n\n` +
       `触发方式：云端给 issue 打 \`agent-task\` 标签或评论 \`/agent\`；本地设 \`AGENT_LOCAL=1\` + \`AGENT_TASK_FILE\`。`;
     comment(guide);
     return;

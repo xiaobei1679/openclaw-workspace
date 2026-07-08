@@ -61,12 +61,23 @@ AI agent manage issues autonomously:
 - Open an issue labeled `agent-task`, **or** comment `/agent` on any issue.
 - The `Agent Responder` reads this `AGENTS.md`, asks an LLM to produce changes,
   runs `node --check` on all scripts, and **opens a PR for human review** (it never merges).
-- Activation requires a repo secret **`LLM_API_KEY`** (OpenAI-compatible; set `LLM_BASE_URL`
-  / `LLM_MODEL` to point at cheaper endpoints). Without it, the workflow only posts a
-  "how to enable" comment.
-- **Local mode** (no GitHub needed): set `AGENT_LOCAL=1` and `AGENT_TASK_FILE=path.md`,
-  then `node scripts/agent/respond.mjs`. It reads the task from the file, applies changes
-  to your working tree, runs `node --check`, and commits to a local branch for you to review.
+
+### LLM backend (3 options — pick one)
+1. **Local, zero key (recommended for zero-budget)**: install [Ollama](https://ollama.com),
+   run `ollama pull qwen2.5-coder:3b && ollama serve`, then point the agent at it:
+   `LLM_BASE_URL=http://127.0.0.1:11434/v1` (no `LLM_API_KEY` needed — it's auto-detected).
+2. **Free hosted key**: DeepSeek / Qwen / Moonshot free tiers — set `LLM_API_KEY` +
+   the matching `LLM_BASE_URL`. On GitHub, store it as a repo **Secret**.
+3. **OpenAI**: set `LLM_API_KEY` (defaults to `api.openai.com/v1`).
+- Optional `LLM_MODEL` (local default `qwen2.5-coder:3b`; cloud default `gpt-4o-mini`).
+- Without ANY usable LLM, the agent only posts a "how to enable" guide comment and
+  takes no code actions.
+
+### Local mode (no GitHub needed)
+- Set `AGENT_LOCAL=1` and `AGENT_TASK_FILE=path.md`, then `node scripts/agent/respond.mjs`.
+- It reads the task from the file, applies changes to your working tree, runs `node --check`,
+  and commits to a local branch (`agent/local-<ts>`) for you to review. Works fully offline
+  with the Ollama backend above. See `scripts/agent/task.example.md`.
 
 ---
 # 中文说明（详细版）
