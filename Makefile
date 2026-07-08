@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify help
+.PHONY: check test validate healthcheck run-agent install verify review help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -27,6 +27,9 @@ install: ## Copy .env.example -> .env and run deploy
 
 verify:  ## Run deploy verification
 	./deploy/verify.ps1
+
+review:  ## Daily review gate: show unpushed changes + run healthcheck
+	bash scripts/dev.sh review
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

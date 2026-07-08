@@ -31,8 +31,33 @@ case "${1:-help}" in
     cp -n .env.example .env 2>/dev/null || true
     ./deploy/install.sh
     ;;
+  review)
+    # Daily review gate: show everything not yet on the remote, then healthcheck.
+    echo "=== Unpushed commits (local vs origin/main) ==="
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+      UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null || git log --oneline -10)
+      if [ -z "$UNPUSHED" ]; then
+        echo "(none — local is in sync with origin/main)"
+      else
+        echo "$UNPUSHED"
+        echo ""
+        echo "=== File change summary (origin/main..HEAD) ==="
+        git diff --stat origin/main...HEAD 2>/dev/null || git diff --stat HEAD~$(git log origin/main..HEAD --oneline 2>/dev/null | wc -l)
+      fi
+    else
+      echo "(not a git repo)"
+    fi
+    echo ""
+    echo "=== Healthcheck (syntax + config + tests) ==="
+    "$NODE_BIN" scripts/ci/check-syntax.mjs
+    "$NODE_BIN" scripts/ci/validate-config.mjs
+    "$NODE_BIN" --test tests/*.test.mjs
+    echo ""
+    echo "✅ Review complete. If all green and changes look good, push with:"
+    echo "   git push origin main"
+    ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review}"
     exit 1
     ;;
 esac
