@@ -38,3 +38,11 @@ bash deploy/install.sh          # or: powershell -ExecutionPolicy Bypass deploy/
 - Keep scripts cross-platform (no `2>nul`, `where`, `findstr`).
 - Reuse helpers from `workspace/.learnings/scripts/lib/common.js`.
 - When editing `.ps1`: no ternary `? :`; save as UTF-8 **with BOM**.
+
+## 5. Autonomous agent (optional)
+The repo ships an agent pipeline (`.github/workflows/agent-respond.yml` + `scripts/agent/respond.mjs`):
+- Open an issue with the `agent-task` label, or comment `/agent` on any issue.
+- An AI agent reads `AGENTS.md`, edits code, runs `node --check`, and opens a PR (human review required — it never auto-merges).
+- **To enable:** add repo secret `LLM_API_KEY` (OpenAI-compatible). Optionally `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`) to use cheaper endpoints.
+- Without the key, the workflow only posts a "how to enable" guide comment and takes no actions.
+

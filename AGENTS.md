@@ -55,6 +55,16 @@ Defaults/parsing live in `workspace/.learnings/scripts/lib/common.js`.
 > Note: the public repo ships **empty framework only** — `gbrain/` (66 MB knowledge base)
 > and user novels stay local and are not published. Deploy scripts create empty dirs so it runs.
 
+## Autonomous agent pipeline (optional)
+This repo includes a GitHub Action (`.github/workflows/agent-respond.yml`) that lets an
+AI agent manage issues autonomously:
+- Open an issue labeled `agent-task`, **or** comment `/agent` on any issue.
+- The `Agent Responder` reads this `AGENTS.md`, asks an LLM to produce changes,
+  runs `node --check` on all scripts, and **opens a PR for human review** (it never merges).
+- Activation requires a repo secret **`LLM_API_KEY`** (OpenAI-compatible; set `LLM_BASE_URL`
+  / `LLM_MODEL` to point at cheaper endpoints). Without it, the workflow only posts a
+  "how to enable" comment.
+
 ---
 # 中文说明（详细版）
 本仓库是开箱即用的 OpenClaw 多智能体工作区。任何智能体 clone 后按下方配置即可运行与贡献。
