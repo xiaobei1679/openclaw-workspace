@@ -40,6 +40,11 @@ const IS_LOCAL_LLM =
   /localhost|127\.0\.0\.1|0\.0\.0\.0|ollama/i.test(LLM_BASE_URL) ||
   /ollama/i.test(LLM_MODEL);
 const HAS_KEY = !!LLM_API_KEY || IS_LOCAL_LLM;
+// LLM request timeout (ms) and max retry count.
+const LLM_TIMEOUT_MS = parseInt(process.env.LLM_TIMEOUT_MS || '120000', 10);
+const LLM_RETRIES = parseInt(process.env.LLM_RETRIES || '1', 10);
+// Max LLM response body size (2 MB) — prevents OOM from malformed responses.
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 let ISSUE_NUMBER = '';
 
@@ -123,37 +128,66 @@ function getTask() {
   return { title: issue.title, body: issue.body || '', number: issue.number, local: false };
 }
 
-async function callLLM(system, user) {
+async function callLLM(system, user, attempt = 0) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
   const headers = { 'Content-Type': 'application/json' };
   if (LLM_API_KEY) headers.Authorization = `Bearer ${LLM_API_KEY}`;
-  const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: LLM_MODEL,
-      temperature: 0.2,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-  });
-  if (!res.ok) throw new Error(`LLM HTTP ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
+  try {
+    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`LLM HTTP ${res.status}: ${body.slice(0, 500)}`);
+    }
+    // Guard against oversized responses.
+    const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
+    if (contentLength > MAX_RESPONSE_BYTES) {
+      throw new Error(`LLM response too large (${contentLength} bytes, limit ${MAX_RESPONSE_BYTES})`);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  } catch (e) {
+    // Retry once on transient failures (network errors / aborts that aren't from real timeouts).
+    if (attempt < LLM_RETRIES && (e.name === 'AbortError' || e.cause?.code === 'ECONNRESET' || e.cause?.code === 'ECONNREFUSED')) {
+      trace('llm_retry', { attempt: attempt + 1, error: e.message });
+      return callLLM(system, user, attempt + 1);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function parseFiles(text) {
+  if (!text || !text.trim()) throw new Error('parseFiles: empty or blank input');
   const m = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/);
   const raw = (m ? m[1] : text).trim();
-  const obj = JSON.parse(raw);
+  let obj;
+  try {
+    obj = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`parseFiles: invalid JSON — ${e.message} (first 200 chars: ${raw.slice(0, 200)})`);
+  }
   if (obj && obj.error) throw new Error('LLM refused: ' + obj.error);
-  if (!Array.isArray(obj)) throw new Error('expected JSON array of files');
+  if (!Array.isArray(obj)) throw new Error('expected JSON array of files, got ' + typeof obj);
   return obj;
 }
 
 export function safePath(p) {
   if (!p || isAbsolute(p) || p.includes('..')) throw new Error('invalid path: ' + p);
+  if (/\x00/.test(p)) throw new Error('invalid path (null byte): ' + p);
   const full = resolve(REPO_ROOT, p);
   const rel = relative(REPO_ROOT, full);
   if (rel.startsWith('..') || rel === '') throw new Error('path escapes repo: ' + p);

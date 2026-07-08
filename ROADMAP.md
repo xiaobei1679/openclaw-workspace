@@ -18,6 +18,13 @@
 - Config validation gate (`scripts/ci/validate-config.mjs` + `tests/validate-config.test.mjs`) — config-first quality gate
 - Lightweight run tracing (`scripts/agent/respond.mjs` → `.agent-runs/*.jsonl`) — production-grade observability seed
 - `QUICKSTART.md` + `make healthcheck` (check + validate + test in one pass)
+- **`.editorconfig`** — consistent coding style across editors (OSS standard)
+- **`CODE_OF_CONDUCT.md`** — Contributor Covenant 2.1
+- **`.github/dependabot.yml`** — automatic security updates for GitHub Actions
+- **Edge-case test suite** (`tests/edge-cases.test.mjs`, 14 tests) — null bytes, empty inputs, deep escapes, multi-file payloads, non-standard fences
+- **LLM call hardening**: timeout (120s default), retry on transient errors, response size cap (2 MB), improved parse error diagnostics
+- **Null-byte path rejection** in `safePath()` (security hardening)
+- **Architecture diagrams** in `docs/ARCHITECTURE.md`: system overview + autonomous pipeline flow
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
@@ -32,7 +39,7 @@
 
 ## Later 💡
 - Lightweight web dashboard for workspace state (reuse `dashboard-data.js` concept)
-- `dependabot` + release workflow (tags → changelog → GitHub Release)
+- Release workflow (tags → changelog → GitHub Release)
 - Pre-commit hook that runs `node --check` + smoke tests locally
 - Adapter layer so the same agent scripts run on OpenAI / DeepSeek / Qwen / Ollama uniformly
 - More out-of-the-box agent roles (reviewer / writer / memory-keeper presets)

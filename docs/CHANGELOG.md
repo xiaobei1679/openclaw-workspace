@@ -5,6 +5,21 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（专业度成熟冲刺 · 本地，未推送）
+- 新增 `.editorconfig`：统一编码风格（UTF-8、2空格缩进、LF换行），跨编辑器一致
+- 新增 `CODE_OF_CONDUCT.md`：Contributor Covenant 2.1 行为准则，专业开源项目标配
+- 新增 `.github/dependabot.yml`：GitHub Actions 依赖每周自动安全更新
+- 新增 `tests/edge-cases.test.mjs`（14 个测试）：覆盖空输入、null byte、深层路径逃逸、多文件 payload、无 fence 原始 JSON、垃圾文本等边界场景
+- `scripts/agent/respond.mjs` 鲁棒性增强：
+  - `callLLM()` 加超时控制（默认 120s，可通过 `LLM_TIMEOUT_MS` 覆盖）
+  - 瞬态故障自动重试（`LLM_RETRIES` 次，覆盖 ECONNRESET/ECONNREFUSED）
+  - LLM 响应体大小上限 2MB（防 OOM）
+  - `parseFiles()` 改进错误诊断：区分空输入 / 非法 JSON / 非 array 类型，附带原始内容片段
+  - `safePath()` 新增 null byte 检测（安全加固）
+- `docs/ARCHITECTURE.md` 重写：去品牌化、新增系统架构图 + 自主智能体管线流程图 + CI 质量门表格 + 可观测性说明
+- 测试总量从 12 → **26**（smoke 8 + validate-config 4 + edge-cases 14），全绿通过
+- `ROADMAP.md` 标记本轮所有完成项
+
 ### 2026-07-09（质量冲刺 · 本地，未推送）
 - 新增 `QUICKSTART.md`：5 分钟从零跑起（本地零密钥 + 框架部署两种路径）
 - 新增 `scripts/ci/validate-config.mjs` + `tests/validate-config.test.mjs`：配置优先（config-first）质量门禁，校验发布版 `.env.example` 与 `config/openclaw.json.example` 形态

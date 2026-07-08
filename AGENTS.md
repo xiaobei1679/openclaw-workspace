@@ -35,16 +35,20 @@ make healthcheck                          # check + validate + test together
 ## Tests
 - `tests/smoke.test.mjs` — functional tests over the **real** exported logic
   (`safePath`, `parseFiles`, and the `node --check` sweep in `scripts/ci/check-syntax.mjs`).
-  Run with `node --test tests/*.test.mjs` or `make test`.
+- `tests/edge-cases.test.mjs` — boundary & security tests (null bytes, empty inputs,
+  deep escapes, multi-file payloads, non-standard fence formats).
 - `tests/validate-config.test.mjs` — covers the published `.env.example` + `config/openclaw.json.example` shape.
 - `scripts/ci/check-syntax.mjs` — the canonical syntax gate reused by CI, `make check`, and the tests.
 - `scripts/ci/validate-config.mjs` — config-first gate: ensures the shipped templates are well-formed.
+  Run all: `node --test tests/*.test.mjs` or `make test`.
 
 ## See also
 - `docs/AGENT_CONTRACT.md` — the agent interaction contract (task format, change JSON, path safety).
-- `docs/ARCHITECTURE.md` — system architecture and agent team.
+- `docs/ARCHITECTURE.md` — system architecture diagrams and autonomous pipeline flow.
 - `ROADMAP.md` — what's done / in progress / next.
 - `SECURITY.md` — vulnerability reporting and secrets policy.
+- `CODE_OF_CONDUCT.md` — community behavior standards.
+- `.editorconfig` — coding style contract for all editors.
 - `QUICKSTART.md` — get running in 5 minutes (local zero-key or framework deploy).
 - `examples/` — copy-paste skill template and a sample agent task (study these first).
 - `scripts/dev.sh` / `scripts/dev.ps1` / `Makefile` — everyday commands.

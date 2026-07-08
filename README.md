@@ -1,7 +1,7 @@
 # AI Multi-Agent Workspace
 
 ![CI](https://github.com/xiaobei1679/openclaw-workspace/actions/workflows/node-check.yml/badge.svg)
-![Tests](https://img.shields.io/badge/tests-8%20passing-green)
+![Tests](https://img.shields.io/badge/tests-26%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Template](https://img.shields.io/badge/repo-Template-blueviolet)
 
