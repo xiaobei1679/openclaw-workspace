@@ -5,6 +5,17 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Router Agent 任务路由冲刺 · 本地，未推送）
+- 新增 **Router Agent** `scripts/agent/router.mjs`：纯函数、零密钥的**确定性任务规划/路由**器，无需 LLM：
+  - `classifyIntent()` / `scoreIntent()`：识别主导意图（research / coding / writing / review / data， fallback general），并给出置信度（high/medium/low）
+  - `decompose()`：按句末标点与步骤连接词（并 / 然后 / 另外 / and then…）把任务拆成子步骤
+  - `route()`：把每个子句路由到注册表（`DEFAULT_REGISTRY`）中的专家 agent，输出结构化计划（task / intent / primaryAgent / subtasks / confidence / fallback / truncated）
+  - `resolveAgent()`：无对应专家时回落到 generalist，保证永远有路由结果
+- 新增 `tests/router.test.mjs`（14 个测试）：覆盖五类意图正/反例、general 回落、decompose 拆分、resolveAgent 专家选择、route 计划形态、多步路由、空任务抛错、自定义注册表、超长任务截断、确定性（同输入同输出）
+- 接入：`Makefile` 新增 `router`（`$(NODE) scripts/agent/router.mjs $(ARGS)`）；`scripts/dev.sh` 新增 `router)` case；`ROADMAP.md` Router Agent（Next→Done）
+- 测试总量从 45 → **59**（smoke 8 + validate-config 4 + edge-cases 14 + scaffold 8 + observer 11 + router 14），全绿
+- 设计依据：多智能体框架的 Router/Observer 分工——Observer 守门（安全/质量），Router 分活（把一个任务派给对的专家），二者皆为零密钥确定性逻辑，可离线运行
+
 ### 2026-07-09（Observer Agent 自动审查冲刺 · 本地，未推送）
 - 新增 **Observer Agent** `scripts/ci/observer.mjs`：纯函数、零密钥的自动化 PR/改动审查器，堵住四类风险：
   - 禁入库路径守卫（`.env` / `config/openclaw.json` / 个人数据目录如 `novel/` `gbrain/` `workspace/memory/` 等）

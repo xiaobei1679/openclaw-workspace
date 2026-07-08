@@ -37,6 +37,9 @@ case "${1:-help}" in
   observer)
     "$NODE_BIN" scripts/ci/observer.mjs --diff
     ;;
+  router)
+    "$NODE_BIN" scripts/agent/router.mjs $2 $3 $4
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -63,7 +66,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router}"
     exit 1
     ;;
 esac

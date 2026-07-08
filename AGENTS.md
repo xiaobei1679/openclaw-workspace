@@ -39,6 +39,8 @@ make healthcheck                          # check + validate + test together
   deep escapes, multi-file payloads, non-standard fence formats).
 - `tests/observer.test.mjs` — Observer Agent: protected paths, secret scan, syntax gate,
   and agent-contract path safety (the automated PR reviewer in `scripts/ci/observer.mjs`).
+- `tests/router.test.mjs` — Router Agent: intent classification, task decomposition, and
+  specialist routing for the planner in `scripts/agent/router.mjs`.
 - `tests/validate-config.test.mjs` — covers the published `.env.example` + `config/openclaw.json.example` shape.
 - `scripts/ci/check-syntax.mjs` — the canonical syntax gate reused by CI, `make check`, and the tests.
 - `scripts/ci/validate-config.mjs` — config-first gate: ensures the shipped templates are well-formed.

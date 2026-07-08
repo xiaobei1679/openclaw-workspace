@@ -1,7 +1,7 @@
 # AI Multi-Agent Workspace
 
 ![CI](https://github.com/xiaobei1679/openclaw-workspace/actions/workflows/node-check.yml/badge.svg)
-![Tests](https://img.shields.io/badge/tests-45%20passing-green)
+![Tests](https://img.shields.io/badge/tests-59%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Template](https://img.shields.io/badge/repo-Template-blueviolet)
 
@@ -21,6 +21,7 @@
 - **贡献友好**：`scripts/scaffold.mjs` 一键生成技能/智能体模板；`make install-hooks` 安装提交前质量门
 - **CI 与本地一致**：`node-check.yml` 跑完整 healthcheck（语法 + 配置 + 测试），坏改动无法过关
 - **Observer Agent 自动审查**：`scripts/ci/observer.mjs` 在提交前 / PR 时拦截禁入库路径、明文密钥、坏语法与智能体契约越界
+- **Router Agent 任务路由**：`scripts/agent/router.mjs` 把一句话任务分类意图、拆成子步骤、派给对应专家 agent（research/coding/writing/review/data），纯确定性逻辑、零密钥、`make router` 即可用
 - **一键部署**：内置 PowerShell / Bash 部署脚本，自动复制并校验
 
 ---

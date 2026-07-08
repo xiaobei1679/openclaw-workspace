@@ -29,13 +29,13 @@
 - **Pre-commit hook** (`.githooks/pre-commit` + `scripts/install-hooks.sh`, `make install-hooks`) — runs the local healthcheck before each commit
 - **CI hardening**: `node-check.yml` now runs the full `make healthcheck` (syntax + config + tests), not just `node --check` — a PR that breaks tests can no longer pass CI
 - **Observer Agent** (`scripts/ci/observer.mjs` + `tests/observer.test.mjs`) — automated change/PR reviewer: protected-path guard, secret scan, syntax gate, agent-contract path safety; wired into `make observer`, the pre-commit hook, and `.github/workflows/observer.yml`
+- **Router Agent** (`scripts/agent/router.mjs` + `tests/router.test.mjs`) — deterministic task planner/router: classifies intent (research/coding/writing/review/data), decomposes a task into clauses, and routes each to a specialist agent from a configurable registry; backed by `make router` / `scripts/dev.sh router` and importable by an LLM-driven agent
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
 - **Eval harness**: LLM-as-judge regression tests over agent outputs, CI-gated (the "evaluation" pillar)
-- **Router Agent**: a planner that decomposes a task and routes to specialist agents
 - **Drift monitoring**: shadow-mode comparison of agent outputs (semantic similarity + schema check)
 - **i18n docs**: translate `docs/` into both Chinese and English sections
 
