@@ -1,7 +1,7 @@
 # AI Multi-Agent Workspace
 
 ![CI](https://github.com/xiaobei1679/openclaw-workspace/actions/workflows/node-check.yml/badge.svg)
-![Tests](https://img.shields.io/badge/tests-59%20passing-green)
+![Tests](https://img.shields.io/badge/tests-75%20passing-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Template](https://img.shields.io/badge/repo-Template-blueviolet)
 
@@ -22,6 +22,7 @@
 - **CI 与本地一致**：`node-check.yml` 跑完整 healthcheck（语法 + 配置 + 测试），坏改动无法过关
 - **Observer Agent 自动审查**：`scripts/ci/observer.mjs` 在提交前 / PR 时拦截禁入库路径、明文密钥、坏语法与智能体契约越界
 - **Router Agent 任务路由**：`scripts/agent/router.mjs` 把一句话任务分类意图、拆成子步骤、派给对应专家 agent（research/coding/writing/review/data），纯确定性逻辑、零密钥、`make router` 即可用
+- **Reviewer 专员自动审核**：`scripts/ci/reviewer.mjs` 把语法 / 配置 / 测试 / Observer 四项确定性零密钥检查聚合成一个 PASS/FAIL  verdict；30 分钟自动化只有它返回 PASS 才 `git push origin main`
 - **一键部署**：内置 PowerShell / Bash 部署脚本，自动复制并校验
 
 ---

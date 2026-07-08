@@ -41,6 +41,9 @@ make healthcheck                          # check + validate + test together
   and agent-contract path safety (the automated PR reviewer in `scripts/ci/observer.mjs`).
 - `tests/router.test.mjs` — Router Agent: intent classification, task decomposition, and
   specialist routing for the planner in `scripts/agent/router.mjs`.
+- `tests/reviewer.test.mjs` — Reviewer specialist: the automated review gate in
+  `scripts/ci/reviewer.mjs` (syntax + config + functional tests + observer), the PASS/FAIL
+  verdict that gates auto-push.
 - `tests/validate-config.test.mjs` — covers the published `.env.example` + `config/openclaw.json.example` shape.
 - `scripts/ci/check-syntax.mjs` — the canonical syntax gate reused by CI, `make check`, and the tests.
 - `scripts/ci/validate-config.mjs` — config-first gate: ensures the shipped templates are well-formed.
@@ -64,6 +67,9 @@ make healthcheck                          # check + validate + test together
 3. Open a PR → the `Node Syntax Check` and `Observer Agent Review` GitHub Actions run
    automatically and **must be green** to merge. (Local pre-commit hook also runs the
    Observer Agent via `scripts/ci/observer.mjs --diff`.)
+
+The 30-minute auto-iteration automation commits locally and then runs
+`scripts/ci/reviewer.mjs`; it pushes `origin/main` **only** when that gate returns PASS.
 
 ## Hard rules (violations get blocked by CI or review)
 - ❌ **No hardcoded absolute paths** (especially `C:\Users\Administrator`, `/Users/...`).

@@ -1,8 +1,9 @@
 # Roadmap — openclaw-workspace
 
 > Living backlog. The recurring "auto-improve" automation (see `AGENTS.md`) pulls from
-> here and the web to make this repo stronger over time. Local-first; nothing is pushed
-> to GitHub unless a human decides to.
+> here and the web to make this repo stronger over time. The 30-minute auto-iteration
+> automation pushes `origin/main` only after the Reviewer specialist (`scripts/ci/reviewer.mjs`)
+> returns PASS — no human confirmation required, but the gate is mandatory.
 
 ## Done ✅
 - Turnkey de-personalization (zero hardcoded paths, `.example` templates, `.gitignore` for local data)
@@ -31,7 +32,7 @@
 - **Observer Agent** (`scripts/ci/observer.mjs` + `tests/observer.test.mjs`) — automated change/PR reviewer: protected-path guard, secret scan, syntax gate, agent-contract path safety; wired into `make observer`, the pre-commit hook, and `.github/workflows/observer.yml`
 - **Router Agent** (`scripts/agent/router.mjs` + `tests/router.test.mjs`) — deterministic task planner/router: classifies intent (research/coding/writing/review/data), decomposes a task into clauses, and routes each to a specialist agent from a configurable registry; backed by `make router` / `scripts/dev.sh router` and importable by an LLM-driven agent
 - **Eval harness** (`scripts/eval/eval.mjs` + `tests/eval.test.mjs`) — the "evaluation pillar": zero-dep, CI-gated deterministic regression over the repo's pure agents (router/observer/scaffold), with an optional LLM-as-judge layer (gated by `EVAL_LLM_BASE_URL`) and `--baseline`/`--compare` drift monitoring; wired into `make eval` / `healthcheck` and `node-check.yml`
-- **Reviewer Agent** (`scripts/ci/reviewer.mjs` + `tests/reviewer.test.mjs`) — local full-tree review gate that aggregates syntax + config + observer + tests into one structured verdict (`runReviewer` / `verdict` / `formatReport` / `runCheck`); the engine behind `make reviewer`
+- **Reviewer Agent (专员审核)** (`scripts/ci/reviewer.mjs` + `tests/reviewer.test.mjs`) — local full-tree review gate that aggregates syntax + config + observer + tests into one structured PASS/FAIL verdict (`runReviewer` / `verdict` / `formatReport` / `runCheck`); the engine behind `make reviewer` and the gate that lets the 30-minute automation auto-push `origin/main` only on PASS
 - **Drift monitoring** — delivered inside the Eval harness via `--baseline` / `--compare` (token-overlap similarity as a zero-dep semantic-similarity proxy, flags drift < 0.98)
 
 ## In progress 🚧
