@@ -25,13 +25,15 @@
 - **LLM call hardening**: timeout (120s default), retry on transient errors, response size cap (2 MB), improved parse error diagnostics
 - **Null-byte path rejection** in `safePath()` (security hardening)
 - **Architecture diagrams** in `docs/ARCHITECTURE.md`: system overview + autonomous pipeline flow
+- **Skill/agent scaffolder** (`scripts/scaffold.mjs` + `tests/scaffold.test.mjs`) — one-command starter skill/agent from template; lowers contribution friction
+- **Pre-commit hook** (`.githooks/pre-commit` + `scripts/install-hooks.sh`, `make install-hooks`) — runs the local healthcheck before each commit
+- **CI hardening**: `node-check.yml` now runs the full `make healthcheck` (syntax + config + tests), not just `node --check` — a PR that breaks tests can no longer pass CI
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
 - **Eval harness**: LLM-as-judge regression tests over agent outputs, CI-gated (the "evaluation" pillar)
-- **Skill/agent scaffolder**: `scripts/scaffold` that generates a new agent/skill from a template (lowers contribution friction)
 - **Router Agent**: a planner that decomposes a task and routes to specialist agents
 - **Observer Agent**: automatically review PRs for rule violations (paths, secrets, `node --check`)
 - **Drift monitoring**: shadow-mode comparison of agent outputs (semantic similarity + schema check)
@@ -40,7 +42,6 @@
 ## Later 💡
 - Lightweight web dashboard for workspace state (reuse `dashboard-data.js` concept)
 - Release workflow (tags → changelog → GitHub Release)
-- Pre-commit hook that runs `node --check` + smoke tests locally
 - Adapter layer so the same agent scripts run on OpenAI / DeepSeek / Qwen / Ollama uniformly
 - More out-of-the-box agent roles (reviewer / writer / memory-keeper presets)
 

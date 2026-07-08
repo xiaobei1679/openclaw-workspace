@@ -31,6 +31,9 @@ case "${1:-help}" in
     cp -n .env.example .env 2>/dev/null || true
     ./deploy/install.sh
     ;;
+  install-hooks)
+    bash scripts/install-hooks.sh
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -57,7 +60,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks}"
     exit 1
     ;;
 esac

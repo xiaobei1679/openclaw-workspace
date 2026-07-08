@@ -1,7 +1,7 @@
 name: Node Syntax Check
 
-# 有人提交 PR 时自动校验仓库内所有 JS 脚本的语法；也顺带守护 main 分支。
-# 任何人新增/修改 .js 文件，本流程都会自动覆盖，无需维护文件清单。
+# 有人提交 PR 时自动校验仓库：语法 + 配置 + 测试，全部通过才允许合并。
+# 也顺带守护 main 分支。复用仓库自带规范脚本，保证 CI 与本地 `make healthcheck` 完全一致。
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  node-check:
-    name: node --check all scripts
+  healthcheck:
+    name: syntax + config + tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,28 +30,10 @@ jobs:
           node-version: '20'
 
       - name: Syntax-check every script
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Scanning for JS scripts..."
-          mapfile -t files < <(find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) \
-            -not -path '*/node_modules/*' -not -path '*/.git/*')
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No JS files found."
-            exit 0
-          fi
-          echo "Found ${#files[@]} script(s). Running 'node --check' on each..."
-          status=0
-          for f in "${files[@]}"; do
-            if node --check "$f"; then
-              echo "  OK   $f"
-            else
-              echo "  FAIL $f"
-              status=1
-            fi
-          done
-          if [ "$status" -ne 0 ]; then
-            echo "::error::One or more scripts failed 'node --check'"
-            exit 1
-          fi
-          echo "All scripts passed syntax check."
+        run: node scripts/ci/check-syntax.mjs
+
+      - name: Validate published config templates
+        run: node scripts/ci/validate-config.mjs
+
+      - name: Run functional tests
+        run: node --test tests/*.test.mjs

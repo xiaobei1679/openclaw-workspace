@@ -5,6 +5,14 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（CI硬化 + 开发体验冲刺 · 本地，未推送）
+- **CI 硬化**：`node-check.yml` 从仅语法检查升级为跑完整 `make healthcheck`（语法 + 配置校验 + 全量测试），CI 与本地质量门完全一致，坏测试的 PR 不再能过关
+- 新增 **预提交钩子**：`.githooks/pre-commit`（提交前本地跑 healthcheck）+ `scripts/install-hooks.sh` 一键安装，`Makefile`/`dev.sh` 新增 `install-hooks` 命令
+- 新增 **脚手架脚本** `scripts/scaffold.mjs`：一条命令从模板生成新技能（`examples/<slug>/SKILL.md`+`run.mjs`）或新智能体（`examples/agent-<slug>.md`），降低贡献门槛
+- 新增 `tests/scaffold.test.mjs`（8 个测试）：覆盖 kebab 归一化、skill/agent 文件生成、非法类型/空名/空 slug 拒绝、路径安全
+- 测试总量从 26 → **34**（smoke 8 + validate-config 4 + edge-cases 14 + scaffold 8），全绿
+- `ROADMAP.md`：标记 scaffolder（Next→Done）、pre-commit hook（Later→Done）；`CHANGELOG`/`README` 同步
+
 ### 2026-07-09（专业度成熟冲刺 · 本地，未推送）
 - 新增 `.editorconfig`：统一编码风格（UTF-8、2空格缩进、LF换行），跨编辑器一致
 - 新增 `CODE_OF_CONDUCT.md`：Contributor Covenant 2.1 行为准则，专业开源项目标配
