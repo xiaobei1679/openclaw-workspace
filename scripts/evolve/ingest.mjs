@@ -42,7 +42,7 @@ const CATEGORY_PATH = {
   'prompt-template': 'examples/agents/<id>.md',
   'agent-role': 'examples/agents/<id>.md',
   skill: 'examples/<id>/SKILL.md',
-  'qa-heuristic': 'workspace/.learnings/scripts/style-engine.js (append rule)',
+  'qa-heuristic': 'workspace/.learnings/scripts/style-engine.mjs (append rule)',
   doc: 'docs/<id>.md',
   other: 'examples/notes/<id>.md'
 };

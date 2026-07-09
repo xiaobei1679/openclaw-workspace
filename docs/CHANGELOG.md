@@ -5,6 +5,14 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（闭环「采集→审核员→应用」· 框架级 · 本地，未推送）
+- 闭环上轮桥梁缺失的"应用"半环——把 qa-heuristic 提案落到真实、可复用的框架模块：
+  - 新增 **零依赖文风自检模块** `workspace/.learnings/scripts/style-engine.mjs`：识别 6 类低质文风（客套开场 / AI 腔过渡词 / 空泛夸张词 / 过长句 / 被动滥用 / 段落重复起句），输出 `{ score(0-100), passed, issues[], counts }` 结构化报告；附 CLI（文件或 stdin 输入，JSON 输出）
+  - 新增 `tests/style-engine.test.mjs`（8 测试）：覆盖招呼填充词报错、AI 腔/空泛词告警、过长句、干净文本通过、确定性、空/非字符串容错
+  - 接入：`make evolve` 默认洞察源改为中立示例 `examples/insights/`（3 个去项目化样本，演示 H1+`<!-- insight-meta -->`+正文契约）；`scripts/evolve/ingest.mjs` 的 qa-heuristic 落点同步更正为 `style-engine.mjs`；`.gitignore` 忽略本地 `/insights/` 与生成物 `insights-out/`
+- 意义：至此"审核员审核收集的信息直接作用到项目"端到端跑通——`make evolve` 把中立采集洞察蒸馏为框架级提案，审核员门禁（reviewer.mjs）放行后落为真实框架改进（style-engine）；全程零项目内容、零依赖、可离线
+- `ROADMAP.md`：闭环「采集→审核员→应用」（Done）；Next「接入真实中立采集源」改为可选的一次性来源
+
 ### 2026-07-09（采集信息→框架改进中立桥梁 · 特性级 · 本地，未推送）
 - 新增 **「采集信息 → 框架改进」桥梁** `scripts/evolve/ingest.mjs`：把中立采集到的洞察（小说/漫剧/音乐/独立游戏调研等）解析→分类→产出**框架级**改进提案，补上"审核员消费采集信息→作用到项目"缺失的那半环（特性级，零依赖）：
   - `parseInsight()`：容错解析 H1 标题 + `<!-- insight-meta -->` 块（tags/source）+ 正文

@@ -51,7 +51,7 @@ roles:   ## List the bundled agent role presets (examples/agents)
 	$(NODE) scripts/agent/roles.mjs
 
 evolve:  ## Distill collected insights into framework-level improvement proposals
-	$(NODE) scripts/evolve/ingest.mjs
+	$(NODE) scripts/evolve/ingest.mjs examples/insights
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

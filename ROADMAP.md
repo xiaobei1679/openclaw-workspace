@@ -37,12 +37,13 @@
 - **i18n docs** — `docs/` is now consistently bilingual (Chinese first, English after): `ARCHITECTURE.md` rewritten with a full Chinese translation (system overview / autonomous pipeline / agent team / script system / CI gates / memory layers / observability), plus a new `docs/README.md` index that states the bilingual convention and links every public doc; `AGENTS.md` "See also" now points to the docs index
 - **Agent role presets** (`examples/agents/*.md` + `scripts/agent/roles.mjs` + `tests/roles.test.mjs`) — a zero-dep, verified library of reusable role definitions (reviewer / writer / memory-keeper / researcher / coder / qa) with a structured loader (`loadRole` / `loadRoles` / `getRole` / `validateRole`) and a `make roles` / `dev.sh roles` listing command; lowers contribution friction by cloning a preset instead of designing a role from scratch
 - **「采集信息 → 框架改进」中立桥梁** (`scripts/evolve/ingest.mjs` + `tests/ingest.test.mjs`) — 把中立采集到的洞察（小说/漫剧/音乐/独立游戏调研等）解析→分类→产出**框架级**改进提案（prompt-template / agent-role / skill / qa-heuristic / doc）；纯函数、零依赖、CLI `make evolve`；补上"审核员消费采集信息→作用到项目"缺失的那半环
+- **闭环「采集 → 审核员 → 应用」**：把 `make evolve` 默认洞察源指向中立示例 `examples/insights/`，并落实 qa-heuristic 提案的真实落点——新增零依赖 `workspace/.learnings/scripts/style-engine.mjs`（文风自检：识别客套开场 / AI 腔过渡词 / 空泛夸张词 / 过长句 / 被动滥用 / 段落重复起句，输出 0-100 评分 + 结构化问题清单），配 `tests/style-engine.test.mjs`（8 测试）。至此"审核员审核收集的信息直接作用到项目"端到端跑通：采集（中立示例）→ `make evolve` 蒸馏提案 → 审核员门禁 → 落为框架改进
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
-- **闭环「采集 → 审核员 → 应用」**：把每日中立创作素材分析（`AI创作日报/`）设为 `make evolve` 的默认洞察源，让"审核员审核收集的信息直接作用到项目"端到端跑通
+- **可选：接入真实中立采集源**：把每日中立创作素材分析（`AI创作日报/`）设为一次性 `OPENCLAW_INSIGHTS_DIR` 来源，经 `make evolve` 蒸馏为框架提案；只提取框架级改进、绝不写入项目内容（中立原则）
 - **轻量 Web 仪表盘**：复用 `dashboard-data.js` 思路，可视化工作区状态（框架级，不含个人项目统计）
 - **Adapter 层**：让同一套 agent 脚本在 OpenAI / DeepSeek / Qwen / Ollama 上统一运行
 
