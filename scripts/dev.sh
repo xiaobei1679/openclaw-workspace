@@ -46,6 +46,9 @@ case "${1:-help}" in
   roles)
     "$NODE_BIN" scripts/agent/roles.mjs ${2:-}
     ;;
+  evolve)
+    "$NODE_BIN" scripts/evolve/ingest.mjs $2 $3 $4
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -72,7 +75,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve}"
     exit 1
     ;;
 esac

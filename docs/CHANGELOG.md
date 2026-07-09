@@ -5,6 +5,18 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（采集信息→框架改进中立桥梁 · 特性级 · 本地，未推送）
+- 新增 **「采集信息 → 框架改进」桥梁** `scripts/evolve/ingest.mjs`：把中立采集到的洞察（小说/漫剧/音乐/独立游戏调研等）解析→分类→产出**框架级**改进提案，补上"审核员消费采集信息→作用到项目"缺失的那半环（特性级，零依赖）：
+  - `parseInsight()`：容错解析 H1 标题 + `<!-- insight-meta -->` 块（tags/source）+ 正文
+  - `classifyInsight()`：按标签/关键词归类到 prompt-template / agent-role / skill / qa-heuristic / doc / other
+  - `toProposal()`：产出结构化提案（id / 类别 / 建议落点 / 动作），落点均为去项目化的框架路径（如 `examples/agents/<id>.md`、`examples/<id>/SKILL.md`）
+  - `ingestDir()` / `renderProposal()`：批量摄入 + 中立 Markdown 卡片渲染；CLI `node scripts/evolve/ingest.mjs [dir] [--write]`，默认输入 `./insights`（可经 `OPENCLAW_INSIGHTS_DIR` 覆盖）
+  - 设计原则：**只蒸馏可复用框架改进，绝不写入任何具体项目内容**——中立身份
+- 新增 `tests/ingest.test.mjs`（11 测试）：覆盖 slug 归一化、meta 解析、标签/关键词分类、提案形态、agent-role→agents 路径、批量摄入、缺目录报错
+- 接入：`Makefile` / `scripts/dev.sh` 新增 `evolve` 命令（列出现有提案）
+- 调研依据：用户明确架构——"审核员审核收集的信息直接作用到项目"；本桥梁将"采集到的信息"与"框架改进"解耦，使审核员（reviewer.mjs / 人工）只需对**提案**做采纳判定，而非对原始项目数据做处理
+- `ROADMAP.md`：采集信息→框架改进桥梁（Done）；Next 新增"闭环采集→审核员→应用"（默认洞察源接 `AI创作日报/`）
+
 ### 2026-07-09（Agent 角色预设库 · 特性级 · 本地，未推送）
 - 完成 **ROADMAP Later「More out-of-the-box agent roles」**：新增**零依赖、可验证的智能体角色预设库**，降低贡献门槛（克隆预设填充即可，无需从零设计角色）：
   - `examples/agents/*.md`：6 个开箱即用角色预设（reviewer / writer / memory-keeper / researcher / coder / qa），每个用统一契约（`<!-- role-meta -->` 元数据块 + 正文系统提示）描述，中文在前
