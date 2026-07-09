@@ -44,6 +44,7 @@
 - **离线端到端冒烟（agent 管线契约路径，无需真实 LLM）**（特性级，零依赖）：给 `scripts/agent/respond.mjs` 的 `callLLM` 加可注入 `fetch` 缝（与 adapter 对称）；新增 `runAgentOffline({ task, fetchImpl })` 导出——离线、无磁盘写入、不碰 git 地跑通"任务 → 提示词 → LLM(假) → parseFiles → safePath 校验"全契约路径，配 `tests/respond.test.mjs`（15 测试，Tier-1 stub fake）。沙箱无法做"真实 Ollama 端到端"，本项是等价离线验证，也让"自主迭代自动化工位"无需密钥即可证明管线契约有效
 - **Agent 本地提交路径可离线验证（可注入 git 后端缝）**（特性级，零依赖）：`scripts/agent/respond.mjs` 的本地提交逻辑抽取为 `commitLocally({ title, now, git })` 纯函数——默认走真实 `defaultGit`（`execSync` 包裹），行为与原内联实现**完全等价**；与 `callLLM` 的 `opts.fetch`、`adapter` 的 `createClient` 同一套"依赖注入缝"理念。智能体的 git 工具调用（`checkout -B` / `add -A` / 固定 bot 身份 commit 且 pipe stdout）现可经注入假后端做**离线契约测试**（呼应 tianpan.co《three-layer CI for agents》的"工具契约测试"），配套 `tests/respond.test.mjs` 断言精确命令序列
 - **环境预检 `doctor` 命令**（特性级，零依赖）：新增 `scripts/doctor.mjs`——本仓库核心是「开箱即跑（turnkey）」，但 `make healthcheck` 只验代码层；`doctor` 补上**环境就绪层**：7 项检查（Node>=18 / git / shell(bash|pwsh) / `.env` 或模板 / `config/openclaw.json` 或模板 / LLM 后端就绪 / 五大质量门禁脚本存在性），纯函数 + 可注入 IO 边界离线可单测；退出码仅当 error 级失败时非 0、warn 级仅提示不阻断（分级同 npm doctor）。配套 `tests/doctor.test.mjs`（20 测试），`Makefile`/`dev.sh`/`dev.ps1` 新增 `doctor`，`QUICKSTART.md`/`AGENTS.md` 同步「doctor 验环境、healthcheck 验代码」互补说明
+- **权限阶梯配置（per-tool deny/ask/allow）**（特性级，零依赖）：新增 `scripts/security/permissions.mjs`——在静态 `observer` 之外补上**基础设施级**运行时工具授权层（Agent Security 2026 第六层栈「Permission is infrastructure, not prompt」）。纯函数 `normalizeTool`/`classifyTool`/`isAllowed`/`resolvePolicy`/`listRules`：工具名按 `:` 命名空间分层、最具体前缀匹配胜出、平局按严重度（deny>ask>allow）、未命中回落 `default`（默认 `ask` 失败-闭合）；默认阶梯把本仓库铁律（`git:push`/`git:push:force`/`repo:commit:main`/`secret:read` 一律 `deny`，`repo:commit:local`/`fs:read` `allow`，`git:remote`/`git:fetch`/`git:pull`/`fs:write`/`network:egress`/`shell:exec` `ask`）变成机器可校验策略。配套 `tests/permissions.test.mjs`（13 测试），`Makefile`/`dev.sh`/`dev.ps1` 新增 `permissions`，`examples/agents/security-auditor.md` 增补指向该层（逻辑审查 + 基础设施权限同属一层）
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
@@ -52,7 +53,6 @@
 - **可选：接入真实中立采集源**：把每日中立创作素材分析（`AI创作日报/`）设为一次性 `OPENCLAW_INSIGHTS_DIR` 来源，经 `make evolve` 蒸馏为框架提案；只提取框架级改进、绝不写入项目内容（中立原则）
 - **显式 Evaluator-Optimizer 精炼循环**：把 `reviewer` 评估反馈做成「评估→带着反馈重新生成提案→再评估」闭环（Anthropic 第 5 种 workflow）；保留「FAIL 绝不提交」铁律（来源：外部调研 1.1）
 - **`.learnings/` write-path 规范 + temporal 分层**：`make evolve` ingest 阶段加过滤/去重/打元数据；`LEARNINGS.md` 按 working/episodic/semantic/procedural 分层；零依赖（借 arXiv 2026 三维记忆分类，来源：外部调研 1.2）
-- **权限阶梯配置（per-tool deny/ask/allow）**：在 `observer` 之外加基础设施级权限（Agent Security 2026 第六层栈，来源：外部调研 1.3）
 - **eval harness 加 span-attached 评估 + 框架自测基准**：借 LLM 可观测 2026（来源：外部调研 1.4）
 - **anti-over-engineering 原则**：写入 `AGENTS.md`/`ROADMAP`（Anthropic 简单性第一原则：能单次调用解决就别上 agent）
 - **调研存档已就绪**：`docs/research/2026-07-09-external-research.md` + `examples/insights/`（memory-write-path / evaluator-optimizer-loop / permission-ladder），供自动化工位经 `make evolve` 蒸馏（来源：外部调研）

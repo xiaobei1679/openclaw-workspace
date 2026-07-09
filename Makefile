@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor help
+.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor permissions help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -64,6 +64,9 @@ release-notes: ## Generate release notes from CHANGELOG.md (writes release-notes
 
 doctor:  ## Pre-flight environment check (node/git/shell/env/config/llm/gates)
 	$(NODE) scripts/doctor.mjs
+
+permissions: ## Show / resolve the per-tool permission ladder (deny/ask/allow)
+	$(NODE) scripts/security/permissions.mjs $(ARGS)
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

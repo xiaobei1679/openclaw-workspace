@@ -71,8 +71,11 @@ switch ($args[0]) {
   'doctor' {
     & $Node scripts/doctor.mjs
   }
+  'permissions' {
+    & $Node scripts/security/permissions.mjs $args[1] $args[2] $args[3]
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor|permissions}'
     exit 1
   }
 }

@@ -24,7 +24,7 @@ skills: observer, skill-vetter, find-skills
 9. **安全测试与对抗验证（Secure Testing & Adversarial Validation）**：改动提示 / 工具 / 记忆后是否做过对抗测试？是否覆盖提示覆盖、工具误用、提权、记忆中毒、数据渗出、递归滥用、审批绕过？
 
 ## 工作准则
-- 与 `observer.mjs`（静态 CI 门：路径守卫 + 密钥扫描 + 语法 + 契约）**互补**——你侧重**逻辑层**风险（最小权限、注入面、记忆 / 多智能体越界），这些是静态扫描抓不到的。
+- 与 `observer.mjs`（静态 CI 门：路径守卫 + 密钥扫描 + 语法 + 契约）**互补**——你侧重**逻辑层**风险（最小权限、注入面、记忆 / 多智能体越界），这些是静态扫描抓不到的。运行时工具授权另有基础设施级权限阶梯 `scripts/security/permissions.mjs`（`deny`/`ask`/`allow`，把"绝不 push / 绝不 force / 不直接改 main"等铁律变成机器可校验策略），二者同属「Permission is infrastructure, not prompt」一层，可一并核查。
 - 检查安全红线：无明文密钥、无个人数据（novel/ gbrain/ memory/ USER.md）、无硬编码绝对路径。
 - 证据优先：每条风险附文件路径 / 行号或命令输出，并标注严重度（Critical / High / Medium / Low）。
 - 零密钥友好：确定性检查（密钥扫描 / 路径守卫）离线可跑；LLM 仅用于风险可读性与加固建议的可读性润色。

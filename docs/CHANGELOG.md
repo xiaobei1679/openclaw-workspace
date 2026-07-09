@@ -5,6 +5,16 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（权限阶梯 per-tool deny/ask/allow · 特性级 · 本地，未推送）
+- 完成 **ROADMAP Next「权限阶梯配置」**：在静态 `observer` 之外补上**基础设施级**运行时工具授权层（特性级，零依赖）：
+  - 新增 `scripts/security/permissions.mjs`——把「Permission is infrastructure, not prompt」（Agent Security 2026 第六层栈）落地为可单测纯函数：`normalizeTool`（工具名按 `:` 命名空间分层、小写归整）/ `classifyTool`（最具体前缀匹配胜出、平局按严重度 deny>ask>allow、未命中回落 `default`）/ `isAllowed` / `resolvePolicy`（结构化 tool/level/category/reason/matched/defaulted）/ `listRules`；CLI `--list` 打印全部规则、`--tool <name>` 解析单个
+  - 默认阶梯**把本仓库铁律变成机器可校验策略**：`git:push` / `git:push:force` / `repo:commit:main` / `secret:read` 一律 `deny`；`repo:commit:local` / `fs:read` `allow`；`git:remote` / `git:fetch` / `git:pull` / `fs:write` / `network:egress` / `shell:exec` `ask`（失败-闭合：未知工具默认 `ask` 需人工确认）。这正是「绝不 push / 绝不 force / 绝不改 main」从人类约定升级为可验证策略
+  - 与既有 `observer.mjs` 互补：observer 守「什么能入库」（静态门），本层守「agent 运行时能调什么工具」（运行时授权）；二者同属「权限是基础设施而非提示词」一层，`examples/agents/security-auditor.md` 已增补指向
+  - 配套 `tests/permissions.test.mjs`（13 测试）：覆盖归一化 / 铁律 deny / 前缀匹配 / ask 级 / allow 级 / 特异性覆盖 / 平局严重度 / 默认回落 / 空与非字符串 / `isAllowed` / `resolvePolicy` 结构化 / `listRules` 不可变 / 确定性
+  - 接入：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `permissions`（`make permissions --list` / `make permissions --tool git:push`）
+- 调研依据（≥3 类）：① slavadubrov《AI Agent Security in 2026》六层栈（权限阶梯为第一层，「Permission is infrastructure, not prompt」）；② Claude Code 官方《Permission Model》Allow/Ask/Deny 三级 + 最具体匹配胜出；③ Larry Peseckis《Agent Tool Permission Matrix》(2026-06) default-deny 授权表，16 类工具跨 OWASP 对齐；④ cybertrendlab《AI Agent Security Checklist 2026》least-privilege + approval gates。均指向「per-tool 权限阶梯是 2026 agent 安全基线，且应独立于提示词」
+- 质量门影响：纯新增零依赖模块 + 测试 + 入口接线，不触及任何既有质量门禁脚本（`scripts/ci/*`、`scripts/eval/`）；`node --check` / `validate-config` / `observer` / `tests` 不受影响
+
 ### 2026-07-09（外部调研：可借鉴实践 + 可集成热点项目 · 文档级 · 本地，未推送）
 - 新增**中立框架级调研存档** `docs/research/2026-07-09-external-research.md`：跨 5+ 专业站点（Anthropic《Building Effective Agents》/ arXiv 2026《Memory for Autonomous LLM Agents》/ awesome-ai-agents-2026 / AI Agent Security 2026 / 2026 生态盘点）提炼可融入 openclaw-workspace 的架构与模式，含「框架现状对照」与「Next 候选」表（按价值/风险排序）。
 - 同步落 **3 个结构化洞察**到 `examples/insights/`（memory-write-path / evaluator-optimizer-loop / permission-ladder），供自动化工位经 `make evolve` 蒸馏为框架提案（中立原则，绝不写项目内容）。
