@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（环境预检 doctor 命令 · 特性级 · 本地，未推送）
+- 新增**环境就绪预检** `scripts/doctor.mjs`：本仓库核心是「开箱即跑（turnkey）」，但 `make healthcheck` 只验代码（语法/配置/测试），不验**本机是否就绪**——新增 `doctor` 补上环境层这一缺口（特性级，零依赖）：
+  - 7 项检查，纯函数 + 可注入 IO 边界（opts 注入 git/探针/exists/env/nodeVersion），离线可单测，与 `respond.mjs` 的 `callLLM`/`commitLocally` 同一套依赖注入理念：`checkNode`（Node >= 18，ESM+内置 test runner）/ `checkGit` / `checkShell`（bash 或 pwsh 至少一个）/ `checkEnvFiles`（`.env` 或模板）/ `checkConfigFiles`（`config/openclaw.json` 或模板）/ `checkLLMBackend`（Ollama 免密钥 / 远端 baseUrl / key，缺则为 warn 不阻塞）/ `checkGates`（五大质量门禁脚本存在性）
+  - 退出码仅当 **error 级**检查失败时非 0；**warn 级**（如缺 `.env`、未配 LLM）仅提示不阻断——符合 npm doctor 的「error 阻塞 / warn 建议」分级
+  - 接入：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `doctor`；`QUICKSTART.md` 与 `AGENTS.md` 的「验证/setup」段加 `make doctor` 并说明「doctor 验环境、healthcheck 验代码」互补
+- 调研依据（≥3 类）：① skills-check《doctor command》——自检命令检查 Node 版本 / 包管理器 / 注册表可达 / 隔离运行时 / LLM provider 配置 / 项目就绪；② `npm doctor`——验证 Node 版本、注册表可达、运行环境等并分级展示建议；③ rapidkit-npm「doctor workspace/project 检测漂移」+ OpenClaw Gateway「pre-flight/rollback runbook」——均确认 agent 框架/CLI 把 `doctor` 预检作为成熟最佳实践；本仓库零依赖薄脚本替代重依赖，与「零依赖 Node ESM」硬规则一致
+- 验证：check-syntax（含新 doctor.mjs 全过）、validate-config ✓、observer --diff 无违规、node --test 全绿（新增 `tests/doctor.test.mjs` 20 项）、reviewer VERDICT: PASS
+- `ROADMAP.md`：新增 Done「环境预检 doctor 命令」
+
 ### 2026-07-09（本地提交路径可注入 git 后端缝 · 特性级 · 本地，未推送）
 - 完成上轮"下次建议"第二条——给 `scripts/agent/respond.mjs` 的本地提交逻辑抽取为**可注入 git 后端缝** `commitLocally({ title, now, git })`（特性级，零依赖），使智能体的 git 工具调用可离线契约测试：
   - `commitLocally` 默认走真实 `defaultGit`（`execSync` 包裹），与原内联实现**行为完全等价**（命令序列：`checkout -B agent/local-<ts>` → `add -A` → `commit -m "agent: <title>"` 且 `stdio:'pipe'` 非致命）；与 `callLLM` 的 `opts.fetch`、`adapter` 的 `createClient` 完全对称——同一套"依赖注入缝"理念贯穿网络层与工具层

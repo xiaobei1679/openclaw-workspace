@@ -68,8 +68,11 @@ switch ($args[0]) {
   'release-notes' {
     & $Node scripts/release/notes.mjs $args[1] $args[2] $args[3] $args[4] $args[5]
   }
+  'doctor' {
+    & $Node scripts/doctor.mjs
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor}'
     exit 1
   }
 }

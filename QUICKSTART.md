@@ -42,10 +42,14 @@ bash deploy/install.sh            # Windows: powershell -ExecutionPolicy Bypass 
 ## 验证一切正常
 
 ```bash
+make doctor      # 或 node scripts/doctor.mjs              —— 预检本机环境（Node/git/shell/.env/config/LLM/质量门禁）
 make check       # 或 node scripts/ci/check-syntax.mjs      —— 扫描所有脚本 node --check
 make test        # 或 node --test tests/*.test.mjs          —— 功能冒烟测试
 make validate    # 或 node scripts/ci/validate-config.mjs   —— 校验发布版配置模板
+make healthcheck # check + validate + test + eval 一气呵成
 ```
+
+> `make doctor` 只检查**本机是否就绪**（环境层），`make healthcheck` 检查**代码是否健康**（质量层）——二者互补：先 `doctor` 再 `healthcheck`。
 
 ---
 

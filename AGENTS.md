@@ -26,10 +26,11 @@ configure it via environment variables, and run/contribute without editing code.
 ```bash
 cp .env.example .env                      # fill QCLAW_PROJECT_DIR etc. as needed
 bash deploy/install.sh                    # or: powershell -ExecutionPolicy Bypass deploy/install.ps1
+make doctor                               # pre-flight env check (node/git/shell/.env/config/llm/gates) — runs offline
 make check                                # syntax check all scripts (alias: scripts/dev.sh check)
 node --test tests/                        # functional smoke tests (safePath / parseFiles / checkAll)
 make validate                             # validate published template configs (config-first gate)
-make healthcheck                          # check + validate + test together
+make healthcheck                          # check + validate + test + eval together
 ```
 
 ## Tests
