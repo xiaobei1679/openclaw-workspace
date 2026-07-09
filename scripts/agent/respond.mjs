@@ -64,9 +64,17 @@ const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 //   LLM_CACHE=0      disable the prompt cache
 //   LLM_CIRCUIT=0    disable the circuit breaker
 //   LLM_CACHE_PATH    ledger file (default .cache/llm-cache.json, gitignored)
+//   LLM_CACHE_TTL     general (non-codegen) entry TTL (default 6h)
+//   LLM_CACHE_MAX     ledger entry cap (default 500)
+//   LLM_CACHE_CODEGEN set 0 to disable caching for CODE-GEN responses (default 1)
+//   LLM_CACHE_CODEGEN_TTL  short TTL for codegen responses (default 10m) — a
+//     cached failure can't self-heal, so codegen gets a short TTL by default
 //   LLM_CB_FAILURE    consecutive failures that trip OPEN (default 3)
 //   LLM_CB_COOLDOWN  ms to stay OPEN before probing (default 5000)
 //   LLM_CB_SUCCESS    consecutive successes in HALF_OPEN that close it (default 2)
+//   LLM_CB_PERSIST    path to persist breaker state across runs (default OFF /
+//     in-memory; set e.g. .cache/llm-circuit.json so the breaker actually
+//     matters under the one-process-per-call run model)
 // The layer ENGAGES only on the real network path (no test `opts.fetch` injected)
 // and is ALWAYS non-fatal: a cache/breaker failure falls through to a plain
 // call, so resilience can never block a valid request.
@@ -80,11 +88,25 @@ const CACHE_LEDGER = process.env.LLM_CACHE_PATH || DEFAULT_LEDGER;
 //   LLM_CACHE_MAX  max ledger entries before oldest are evicted (default 500).
 const CACHE_TTL_MS = Number(process.env.LLM_CACHE_TTL ?? 6 * 60 * 60 * 1000);
 const CACHE_MAX = Number(process.env.LLM_CACHE_MAX ?? 500);
+// Codegen cache: this responder ONLY does CODE GENERATION, where a cached
+// failure can't self-heal (the broken output keeps matching the same key
+// because a failed generation doesn't change `git ls-files`). So codegen
+// responses get a SHORT default TTL (10m) and can be disabled outright via
+// LLM_CACHE_CODEGEN=0 — the safe default for creative output. Non-codegen
+// callers can pass opts.codegen=false to use the long CACHE_TTL_MS instead.
+const CODEGEN_CACHE_ENABLED = (process.env.LLM_CACHE_CODEGEN ?? '1') !== '0';
+const CODEGEN_TTL_MS = Number(process.env.LLM_CACHE_CODEGEN_TTL ?? 10 * 60 * 1000);
+// Circuit-breaker persistence (opt-in). When set, the breaker reloads its
+// state from this file on startup and rewrites it on every transition, so it
+// protects across the one-process-per-call run model. Default OFF so the test
+// suite stays hermetic (no stale OPEN state bleeding between separate runs).
+const CB_PERSIST = process.env.LLM_CB_PERSIST || '';
 const breaker = CIRCUIT_ENABLED
   ? createBreaker({
       failureThreshold: Number(process.env.LLM_CB_FAILURE ?? 3),
       cooldownMs: Number(process.env.LLM_CB_COOLDOWN ?? 5000),
       successThreshold: Number(process.env.LLM_CB_SUCCESS ?? 2),
+      persistPath: CB_PERSIST || undefined,
     })
   : null;
 
@@ -234,7 +256,12 @@ function doFetch(cfg, fetchImpl, system, user, attempt = 0) {
 export async function callLLM(system, user, opts = {}, attempt = 0) {
   const fetchImpl = opts.fetch || globalThis.fetch;
   const cfg = opts.config || LLM;
-  const useResilience = (opts.resilience ?? !opts.fetch) && CACHE_ENABLED;
+  // Codegen detection: this responder's sole purpose is code generation, so
+  // default to codegen semantics (short TTL / can be disabled). A caller can
+  // pass opts.codegen=false to opt into the long general TTL instead.
+  const isCodeGen = opts.codegen ?? true;
+  const cacheOn = CACHE_ENABLED && (isCodeGen ? CODEGEN_CACHE_ENABLED : true);
+  const useResilience = (opts.resilience ?? !opts.fetch) && cacheOn;
 
   // Build the cache-key request (matches the body doFetch sends).
   const cacheMessages = [
@@ -246,8 +273,11 @@ export async function callLLM(system, user, opts = {}, attempt = 0) {
     provider: cfg.provider,
     temperature: 0.2,
     ledgerPath: CACHE_LEDGER,
-    ttlMs: CACHE_TTL_MS,
+    ttlMs: isCodeGen ? CODEGEN_TTL_MS : CACHE_TTL_MS,
     maxEntries: CACHE_MAX,
+    // Injectable clock (tests only) so cache TTL expiry can be asserted
+    // deterministically without real-time waits.
+    now: opts.cacheNow,
   };
 
   // 1) prompt-cache lookup

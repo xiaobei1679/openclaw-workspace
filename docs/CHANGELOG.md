@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-10（codegen 缓存语义 + 熔断状态持久化 · 特性级 · 本地，未推送）
+
+- **背景**：承接 2026-07-09 深度审查的"两项待拍板设计取舍"，用户指示"1.2 都落地"。这是把上次诚实标注的两个边界变成可配置、可用的能力，而非仅文档说明。
+- **决策 1 — codegen 缓存语义（短 TTL / 可关）**（`scripts/agent/respond.mjs`）：`callLLM` 现在默认按**代码生成**处理（`isCodeGen = opts.codegen ?? true`）。codegen 响应走更短的 `LLM_CACHE_CODEGEN_TTL`（默认 **10 分钟**，远短于通用 6h），缓解"失败的 codegen 输出被永久缓存、无法自愈"；`LLM_CACHE_CODEGEN=0` 可完全关闭 codegen 缓存；非代码生成调用传 `opts.codegen=false` 走通用长 TTL（`CACHE_TTL_MS`）。缓存键仍取 `provider/model/温度0.2/messages`，并新增可注入 `opts.cacheNow` 时钟便于确定性测试。
+- **决策 2 — 熔断状态持久化（opt-in）**（`scripts/llm/circuit-breaker.mjs`）：`createBreaker` 新增 `persistPath`——构造时从磁盘重载状态、每次状态转换即**原子写**（temp+rename）回盘。设 `LLM_CB_PERSIST=.cache/llm-circuit.json` 后，熔断对"每小时反复起进程打同一故障 provider"**跨运行真正拦截**（OPEN 期间新进程快速失败、不空转重试），弥补了"一次性进程模型下熔断近乎失效"的边界。**默认关闭**：持久化开启会让 breaker 测试跨进程读到上次遗留的 OPEN 状态、破坏测试确定性——真实部署（Actions / 本地运行包装脚本）应显式开启。重载时只恢复"端点健康信号"（OPEN + 冷却时间戳），不清算连续失败/成功计数（独立任务不应继承上一次进程半跳闸的阈值）。
+- **测试**：`tests/respond.test.mjs` +2（codegen 短 TTL 过期 vs 非 codegen 长 TTL 命中，确定性时钟注入；为避开模块级熔断单例被前置 breaker 测试置 OPEN，该用例置于 breaker 测试之前）；`tests/circuit-breaker.test.mjs` +3（持久化跨运行重载 OPEN / 损坏文件忽略 / opt-in 内存态）。全量 `node --test tests/*.test.mjs` **241/241 通过**（较上轮 236 +5）。
+- **文档**：`docs/LLM_RESILIENCE.md` 环境变量表增 `LLM_CACHE_CODEGEN`/`LLM_CACHE_CODEGEN_TTL`/`LLM_CB_PERSIST` 三行；§5 第 1、2 条改写为"已落地"状态（含 opt-in 默认值与重载语义的诚实说明）；`ROADMAP.md` Done 段补一条。
+- **质量门**：`node --check` + `reviewer.mjs`（syntax/config/functional/observer）全绿。**本地提交，未推送**。
+
 ### 2026-07-10（缓存卫生补强 + 诚实边界文档 · 特性/文档级 · 本地，未推送）
 
 - **背景**：对昨日「弹性三件套 + 默认接入生产路径」做深度代码审查（不止跑门禁绿灯，逐行查边界/并发/单例/跨平台）。发现 4 个真问题，本次补掉 3 个纯增益项、诚实记录 2 个设计取舍。

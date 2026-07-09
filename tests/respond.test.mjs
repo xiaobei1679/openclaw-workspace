@@ -292,6 +292,68 @@ test('callLLM: prompt cache engages and serves the 2nd identical call without a 
   rmSync('.cache/llm-cache.json', { force: true }); // tidy: don't leave a ledger behind
 });
 
+// ---------------------------------------------------------------------------
+// Codegen cache semantics (decision 1 of the post-review hardening). The
+// responder is a CODE GENERATOR, so a cached failure can't self-heal — codegen
+// responses get a SHORT default TTL (LLM_CACHE_CODEGEN_TTL, 10m) while
+// non-codegen callers (opts.codegen=false) keep the long CACHE_TTL_MS (6h).
+// Asserted deterministically via an injected cache clock (opts.cacheNow).
+// Placed BEFORE the breaker test on purpose: the module-level breaker is a
+// shared singleton and the breaker test below leaves it OPEN.
+// ---------------------------------------------------------------------------
+
+test('callLLM: codegen uses a SHORTER cache TTL than non-codegen (deterministic via injected clock)', async () => {
+  rmSync('.cache/llm-cache.json', { force: true });
+  let clock = 1_000_000_000_000;
+  const now = () => clock;
+  const calls = [];
+  const fake = makeFakeFetch({ calls, content: 'gen-x' });
+  const base = {
+    fetch: fake,
+    resilience: true,
+    config: cfg({ model: 'gpt-4o-mini-codegen-ttl' }),
+    cacheNow: now,
+  };
+
+  // codegen (default): store at T0, then advance 11m (> 10m codegen TTL) ->
+  // entry EXPIRED -> 2nd call hits the network again.
+  await callLLM('s', 'u', base);
+  clock += 11 * 60 * 1000;
+  await callLLM('s', 'u', base);
+  assert.equal(calls.length, 2, 'codegen entry should expire after its short TTL and refetch');
+
+  // non-codegen (opts.codegen=false): fresh ledger, store at new clock, advance
+  // 1h (< 6h general TTL) -> must be served from cache (no 3rd fetch).
+  rmSync('.cache/llm-cache.json', { force: true });
+  clock = 2_000_000_000_000;
+  await callLLM('s', 'u', { ...base, codegen: false });
+  clock += 60 * 60 * 1000; // +1h
+  await callLLM('s', 'u', { ...base, codegen: false });
+  assert.equal(calls.length, 3, 'non-codegen entry within 6h TTL should be served from cache (no 3rd fetch)');
+
+  rmSync('.cache/llm-cache.json', { force: true }); // tidy
+});
+
+test('callLLM: opts.codegen=false still caches (long TTL) and opts.codegen defaults to true', async () => {
+  rmSync('.cache/llm-cache.json', { force: true });
+  const calls = [];
+  const fake = makeFakeFetch({ calls, content: 'cached-non-codegen' });
+  const opts = {
+    fetch: fake,
+    resilience: true,
+    config: cfg({ model: 'gpt-4o-mini-noncodegen' }),
+  };
+  // default (codegen true) caches: 2nd identical call is a hit.
+  await callLLM('sys-a', 'user-a', opts);
+  await callLLM('sys-a', 'user-a', opts);
+  assert.equal(calls.length, 1, 'codegen (default) call should be cached on the 2nd identical request');
+  // explicit codegen=false also caches.
+  await callLLM('sys-b', 'user-b', { ...opts, codegen: false });
+  await callLLM('sys-b', 'user-b', { ...opts, codegen: false });
+  assert.equal(calls.length, 2, 'non-codegen call should also be cached on its 2nd identical request');
+  rmSync('.cache/llm-cache.json', { force: true });
+});
+
 test('callLLM: circuit breaker engages and fails fast (no fetch) once OPEN', async () => {
   const calls = [];
   const failing = makeFakeFetch({ calls, ok: false, status: 503, content: 'down' });
