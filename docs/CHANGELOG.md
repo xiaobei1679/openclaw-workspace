@@ -5,6 +5,16 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（轻量框架状态仪表盘 · 特性级 · 本地，未推送）
+- 完成 **ROADMAP Next「轻量 Web 仪表盘」**：新增零依赖 `scripts/dashboard.mjs`，把仓库**框架级**状态做成可离线打开的静态仪表盘（特性级）：
+  - 纯函数、零依赖、可单测：`parseRoadmap`（按段统计 Done/In progress/Next/Later 条目，忽略 emoji/括号装饰，遇到未知 `##` 段即停止计数的健壮解析）/ `countTestFiles` / `countScripts` / `countDocs` / `countPresets` / `countConfigAgents` / `qualityGates` / `collectRepoState` / `renderHtml`
+  - 生成**单文件、自包含内联 CSS、无任何 CDN/外链**的 `.dashboard/index.html`：概览卡片（Agent 预设/配置角色、测试数、脚本数、文档数）+ 路线图进度条 + 五大质量门禁（check-syntax/validate-config/observer/reviewer/eval）健康清单；`renderHtml` 确定性输出、对仓库名做 HTML 转义防注入
+  - **完全去个人化**：旧 `workspace/.learnings/scripts/dashboard-data.js` 读的是个人项目统计（经验池/创作反馈等），本脚本只读公开仓库结构，不含任何个人项目数据——复用"仪表盘"思路但剥离隐私
+  - 新增 `tests/dashboard.test.mjs`（13 测试）：覆盖路线图解析（含未知段不计、空/nil 容错）、各计数器对真实仓库的下界、门禁清单、聚合可序列化、HTML 确定性/无外链/注入转义
+  - 接入：`Makefile` / `scripts/dev.sh` / `scripts/dev.ps1` 新增 `dashboard` 命令；`.dashboard/` 加入 `.gitignore`（生成物不入库）
+- 调研依据：agent 框架可观测性（LangGraph Studio / LangSmith / AutoGen）的仪表盘主要可视化**智能体状态 / 运行轨迹 / 质量门禁**；对"框架模板"（非运行实例）而言最合适的形态是**静态、自包含的框架级状态面板**（agents / tests / scripts / docs / roadmap / gates），且须零依赖、可离线——与仓库"零依赖 Node ESM"硬规则一致
+- `ROADMAP.md`：轻量 Web 仪表盘（Next→Done；Later 同名项同步移除）
+
 ### 2026-07-09（闭环「采集→审核员→应用」· 框架级 · 本地，未推送）
 - 闭环上轮桥梁缺失的"应用"半环——把 qa-heuristic 提案落到真实、可复用的框架模块：
   - 新增 **零依赖文风自检模块** `workspace/.learnings/scripts/style-engine.mjs`：识别 6 类低质文风（客套开场 / AI 腔过渡词 / 空泛夸张词 / 过长句 / 被动滥用 / 段落重复起句），输出 `{ score(0-100), passed, issues[], counts }` 结构化报告；附 CLI（文件或 stdin 输入，JSON 输出）

@@ -41,8 +41,11 @@ switch ($args[0]) {
     }
     & ./deploy/install.sh
   }
+  'dashboard' {
+    & $Node scripts/dashboard.mjs
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard}'
     exit 1
   }
 }

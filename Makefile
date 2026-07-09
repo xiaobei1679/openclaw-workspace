@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve help
+.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -52,6 +52,9 @@ roles:   ## List the bundled agent role presets (examples/agents)
 
 evolve:  ## Distill collected insights into framework-level improvement proposals
 	$(NODE) scripts/evolve/ingest.mjs examples/insights
+
+dashboard: ## Generate the static framework-state dashboard (.dashboard/index.html)
+	$(NODE) scripts/dashboard.mjs
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'
