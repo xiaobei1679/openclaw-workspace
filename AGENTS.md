@@ -85,6 +85,23 @@ The 30-minute auto-iteration automation commits locally and then runs
 - ✅ When editing `.ps1` (PowerShell 5.1 compat): no ternary `? :` (use `if/else`); file must be UTF-8 **with BOM**.
 - ✅ Reuse helpers from `workspace/.learnings/scripts/lib/common.js` (paths, atomic write, CJK count).
 
+## Anti-over-engineering principles (design philosophy)
+Borrowed directly from Anthropic's **#1 rule** in *Building Effective Agents*
+(2024-12-19) and the 2026 "When Not to Build AI Agents" playbook:
+**start with the simplest thing that works** — a single LLM call beats a workflow,
+a workflow beats a multi-agent system. Apply this explicitly when extending this repo:
+- ❌ Don't add a feature just because another framework has it. Only add when the
+  added complexity **measurably improves** the result for the turnkey use case.
+- ❌ Don't introduce new npm/Python dependencies. **Zero-dependency Node ESM is a
+  hard constraint, not a style preference** — it is what makes the repo clone-and-run.
+- ✅ New code must be **verifiable**: pure functions + `node --test` coverage +
+  a quality-gate entry point (Makefile / dev.sh / dev.ps1). No code without tests.
+- ✅ Prefer reusing `workspace/.learnings/scripts/lib/common.js` over writing new helpers.
+- ✅ The auto-iteration automation must **pause when the framework is at a high
+  maturity mark** (quality gates all green, Next items are doc/research-only) to
+  avoid piling changes that burden human daily review. Doc-level polish is fine;
+  stacking features is not.
+
 ## Path conventions (reuse, don't reinvent)
 - Project output dir: `process.env.QCLAW_PROJECT_DIR` (default `项目产出`)
 - Hotspot dir: `process.env.QCLAW_HOT_DIR`
@@ -127,3 +144,11 @@ AI agent manage issues autonomously:
 **流程**：开分支改代码 → 本地 `node --check` 全过 → 开 PR，GitHub Actions（`Node Syntax Check`）自动校验，必须全绿才合并。
 
 **硬规则**：禁硬编码绝对路径（`C:\Users\...`/`/Users/...`）；禁提交个人数据（novel/、gbrain/、memory/、USER.md）与密钥（config/openclaw.json、.env）；`.js` 须过 `node --check`；JS 注释用 `//` 不用 `#`；跨平台（禁 `2>nul`/`where`/`findstr`）；改 `.ps1` 用 `if/else` 且带 UTF-8 BOM；复用 `lib/common.js` 的约定。
+
+## 反过度工程原则（设计哲学）
+直接取自 Anthropic《Building Effective Agents》(2024-12-19) **第一原则** 与 2026《When Not to Build AI Agents》playbook：**从最简单能用的方案起步**——单次 LLM 调用优于 workflow，workflow 优于多智能体。扩展本仓库时显式遵循：
+- ❌ 别因"别人有"就加特性。仅当新增复杂度**显著改善**开箱即用结果时才加。
+- ❌ 别引入新 npm/Python 依赖。**零依赖 Node ESM 是硬约束而非风格偏好**——它是仓库 clone-and-run 的基石。
+- ✅ 新代码必须**可验证**：纯函数 + `node --test` 覆盖 + 质量门入口（Makefile / dev.sh / dev.ps1）。无测试不入库。
+- ✅ 优先复用 `workspace/.learnings/scripts/lib/common.js`，别另写 helper。
+- ✅ 自动化工位在**框架达高成熟度**（质量门全绿、Next 仅剩文档/研究级）时须**主动暂停**，避免堆改动加重人工每日 review 负担。文档级打磨可以；堆特性不行。

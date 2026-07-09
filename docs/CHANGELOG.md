@@ -5,6 +5,13 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（anti-over-engineering 原则 · 文档级 · 本地，未推送）
+- 完成 **ROADMAP Next「anti-over-engineering 原则」**（文档级，零风险，呼应本自动化的自我约束）：
+  - `AGENTS.md` 在「硬规则」之后新增「Anti-over-engineering principles（设计哲学）」中英双语段：直接落 Anthropic《Building Effective Agents》**第一原则**「能用单次 LLM 调用解决就别上 workflow，能 workflow 就别上 agent」；并固化为可操作规则——① 不为"别人有"而加特性，仅当复杂度**显著改善**开箱即用结果才加；② 零依赖 Node ESM 是**硬约束非风格偏好**（clone-and-run 基石）；③ 新代码必须可验证（纯函数 + `node --test` + 质量门入口），无测试不入库；④ 优先复用 `lib/common.js`；⑤ **自动化工位在框架达高成熟度（质量门全绿、Next 仅剩文档/研究级）时主动暂停**，避免堆改动加重人工每日 review 负担（文档级打磨可，堆特性不可）
+  - 来源（≥3 类）：① Anthropic《Building Effective Agents》(2024-12-19) 三大核心原则之首「简单性（simple, composable patterns over complex frameworks）」；② mer.vin《When Not to Build AI Agents: Anthropic's Workflow-vs-Agent playbook》(2026-05) 主张 "start simple"，仅当简单 prompt 不够才上 agent；③ 本仓库 `docs/research/2026-07-09-external-research.md` 1.1 已将该原则列为 Next 候选 #6（低价值风险）
+- 质量门影响：纯 Markdown 文档改动，不触及任何 `.js/.mjs` 质量门禁脚本与 `scripts/eval/`；`node --check` / `validate-config` / `observer` / `tests` 不受影响
+- `ROADMAP.md`：anti-over-engineering 原则（Next→Done）
+
 ### 2026-07-09（LLM 响应缓存 + 熔断器 · 特性级 · 本地，未推送）
 - 完成用户"去 GitHub 等站搜可借鉴/可复制功能"指示的第二轮落地——在既有 `cost.mjs` 与 `respond.mjs` 重试之上，补上两块零依赖 LLM 弹性基础设施（均经 GitHub 直搜 + 技术站点核实可复制、零依赖可行）：
   - **LLM 响应缓存（prompt caching）** `scripts/llm/cache.mjs`（特性级，零依赖）：把"相同 `(provider,model,采样,messages)` 请求命中缓存跳过重复 LLM 调用"做成可机器化复用能力。纯函数 `canonicalRequest`（role 小写、content 去首尾空格、采样参数归一）/ `cacheKey`（SHA-256 稳定键）/ `lookup` / `store` / `withCache`（命中则不调 `callLLM`、`cached:true`）/ `stats`；账本默认 `.cache/llm-cache.json`（新增 gitignore），可注入 `fs` 离线可单测。CLI `make llm-cache --messages '<json>' [--model X]` / `--stats`

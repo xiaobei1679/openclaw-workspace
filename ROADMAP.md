@@ -49,6 +49,7 @@
 - **Token/成本追踪**（特性级，零依赖）：新增 `scripts/llm/cost.mjs`——确定性离线 token 估算（CJK+拉丁启发式，标为 estimate）+ 可扩展 provider 价格表（近似公开价、注释声明需自查）+ `costFor`/`tally`/可选 JSONL `accumulate`/`readLedger`。零依赖（不引 tiktoken/bpe），`make cost` 提供 `--estimate`/`--cost`/`--models`。呼应「Agent 运行 LLM 须可见成本」的 2026 普遍诉求（来源：daoyuly.cn / zylos.ai 调研）
 - **LLM 响应缓存（prompt caching）**（特性级，零依赖）：新增 `scripts/llm/cache.mjs`——把"相同 `(provider,model,采样,messages)` 请求命中缓存跳过重复 LLM 调用"做成零依赖基础设施（借 2026 prompt-caching 实践：messkan/karthyick/prompt-cache + 设计文）。纯函数 `canonicalRequest`/`cacheKey`(SHA-256)/`lookup`/`store`/`withCache`/`stats`：请求按 `provider/model/采样/messages` 归一化后哈希为键（role 小写、content 去空格），命中则 `withCache` 不调 LLM；账本默认 `.cache/llm-cache.json`（已 gitignore），可注入 `fs` 离线可单测。CLI `make llm-cache --messages '<json>' [--model X]` / `--stats`；与 `cost.mjs` 互补（缓存降本、成本可见）。配套 `tests/cache.test.mjs`（6 测试），`Makefile`/`dev.sh`/`dev.ps1` 新增 `llm-cache`
 - **熔断器 Circuit Breaker**（特性级，零依赖）：新增 `scripts/llm/circuit-breaker.mjs`——CLOSED/OPEN/HALF_OPEN 纯状态机（借 rheatkhs/yves-circuit-breaker 零依赖纯逻辑 + ayushedith/retryify），补上 `respond.mjs` 既有"瞬态重试"之外的"持续故障短路"能力：连续 `failureThreshold` 次失败→OPEN 直接拒绝（抛 `CircuitOpenError` 不调 fn）→冷却后放行探针→`successThreshold` 次成功→闭合。可注入 `now` 离线可单测；CLI `make circuit-breaker --demo`。配套 `tests/circuit-breaker.test.mjs`（7 测试），`Makefile`/`dev.sh`/`dev.ps1` 新增 `circuit-breaker`；与缓存/重试正交可叠加（见 `docs/LLM_RESILIENCE.md`）
+- **反过度工程原则（anti-over-engineering）**（文档级，零风险）：`AGENTS.md`「硬规则」之后新增「Anti-over-engineering principles（设计哲学）」中英双语段（也呼应本自动化的自我约束）。直接落 Anthropic《Building Effective Agents》**第一原则**「能用单次 LLM 调用解决就别上 workflow、能 workflow 就别上 agent」，并固化为可操作规则：① 不为"别人有"而加特性，仅当复杂度**显著改善**开箱即用结果才加；② 零依赖 Node ESM 是**硬约束非风格偏好**（clone-and-run 基石）；③ 新代码必须可验证（纯函数 + `node --test` + 质量门入口），无测试不入库；④ 优先复用 `lib/common.js`；⑤ **自动化工位在框架达高成熟度（质量门全绿、Next 仅剩文档/研究级）时主动暂停**，避免堆改动加重人工每日 review 负担（文档级打磨可，堆特性不可）。来源：Anthropic 第一原则 + 2026《When Not to Build AI Agents》playbook + 本仓库 `docs/research/2026-07-09-external-research.md` 1.1 候选 #6
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
@@ -58,7 +59,6 @@
 - **显式 Evaluator-Optimizer 精炼循环**：把 `reviewer` 评估反馈做成「评估→带着反馈重新生成提案→再评估」闭环（Anthropic 第 5 种 workflow）；保留「FAIL 绝不提交」铁律（来源：外部调研 1.1）
 - **`.learnings/` write-path 规范 + temporal 分层**：`make evolve` ingest 阶段加过滤/去重/打元数据；`LEARNINGS.md` 按 working/episodic/semantic/procedural 分层；零依赖（借 arXiv 2026 三维记忆分类，来源：外部调研 1.2）
 - **eval harness 加 span-attached 评估 + 框架自测基准**：借 LLM 可观测 2026（来源：外部调研 1.4）
-- **anti-over-engineering 原则**：写入 `AGENTS.md`/`ROADMAP`（Anthropic 简单性第一原则：能单次调用解决就别上 agent）
 - **调研存档已就绪**：`docs/research/2026-07-09-external-research.md` + `examples/insights/`（memory-write-path / evaluator-optimizer-loop / permission-ladder），供自动化工位经 `make evolve` 蒸馏（来源：外部调研）
 
 ## Later 💡
