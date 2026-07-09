@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval help
+.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -46,6 +46,9 @@ router: ## Plan + route a task to specialist agents (deterministic, no key)
 
 eval:    ## Run the eval harness (deterministic regression + drift)
 	$(NODE) scripts/eval/eval.mjs
+
+roles:   ## List the bundled agent role presets (examples/agents)
+	$(NODE) scripts/agent/roles.mjs
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

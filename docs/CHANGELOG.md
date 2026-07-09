@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Agent 角色预设库 · 特性级 · 本地，未推送）
+- 完成 **ROADMAP Later「More out-of-the-box agent roles」**：新增**零依赖、可验证的智能体角色预设库**，降低贡献门槛（克隆预设填充即可，无需从零设计角色）：
+  - `examples/agents/*.md`：6 个开箱即用角色预设（reviewer / writer / memory-keeper / researcher / coder / qa），每个用统一契约（`<!-- role-meta -->` 元数据块 + 正文系统提示）描述，中文在前
+  - `scripts/agent/roles.mjs`：零依赖加载器，导出 `parseMeta` / `validateRole` / `loadRole` / `loadRoles` / `getRole`，可校验 id 格式、必填字段、重复 id，CLI `node scripts/agent/roles.mjs [dir]` 输出 JSON 清单
+  - `tests/roles.test.mjs`（8 测试）：覆盖元数据解析、必填校验、id 格式、单文件加载、缺块无效、真实预设全绿且 id 唯一、getRole 命中/未命中
+  - 接入：`Makefile` / `scripts/dev.sh` 新增 `roles` 命令（列出现有预设）
+- 调研依据：Anthropic《Building Effective Agents》六大可组合模式（reviewer↔evaluator-optimizer、coder↔orchestrator-workers、researcher↔parallelization）；CrewAI 的 Role+Task+Crew 角色抽象；多框架对比文（CrewAI 角色扮演 / LangGraph 状态机 / AutoGen 对话）显示"角色预设"是降低编排门槛的通用做法
+- `ROADMAP.md`：More out-of-the-box agent roles（Later→Done）
+
 ### 2026-07-09（i18n docs：docs/ 中英双语化 · 本地，未推送）
 - 完成 **ROADMAP Next「i18n docs」**：把对外文档统一为「中文在前、英文在后」的单文件双语（文档级，低风险高价值）：
   - `docs/ARCHITECTURE.md` 改写：新增完整中文翻译段（系统总览 / 自主智能体管线 / 智能体团队 / 脚本系统 / CI 质量门 / 记忆层级 / 可观测性），英文原文保留在后；ASCII 架构图语言无关，中英共用
