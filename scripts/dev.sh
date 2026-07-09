@@ -64,6 +64,12 @@ case "${1:-help}" in
   permissions)
     "$NODE_BIN" scripts/security/permissions.mjs $2 $3 $4
     ;;
+  skills)
+    "$NODE_BIN" scripts/skills/registry.mjs --list ${2:-examples}
+    ;;
+  cost)
+    "$NODE_BIN" scripts/llm/cost.mjs $2 $3 $4 $5 $6 $7
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -90,7 +96,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard|llm-adapter|release-notes|doctor|permissions}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard|llm-adapter|release-notes|doctor|permissions|skills|cost}"
     exit 1
     ;;
 esac

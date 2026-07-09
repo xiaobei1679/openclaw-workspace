@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Skills 注册/发现层 + Token/成本追踪 · 特性级 · 本地，未推送）
+- 借鉴 2026-07 GitHub `multi-agent` 主题热门框架（deer-flow / ruflo / CowAgent / MemOS / PraisonAI 均把 **skills** 作为一等原语；token/成本追踪为普遍刚需），补上本仓库缺失的两块零依赖基础设施层：
+  - **Skills 注册/发现层** `scripts/skills/registry.mjs`（特性级，零依赖）：解析 `SKILL.md` frontmatter、递归发现技能（`discoverSkills`，`maxDepth` 限深、跳过 `node_modules/.git/.workbuddy`）、校验必填字段（`name`/`description` + 小写 slug 约定）、按 name/分类检索（`getSkill` 大小写不敏感 / `filterByCategory` / `listValid`）。核心函数纯函数可单测，发现层走 fs 薄封装。CLI `make skills`（默认扫 `examples`）。让「有 roles 但无 skill 注册」的复用摩擦彻底消失——agent 调用技能前可机器化发现与校验
+  - **Token/成本追踪** `scripts/llm/cost.mjs`（特性级，零依赖）：确定性离线 token **估算**（`estimateTokens`：CJK 每字≈1 token、拉丁每 4 字符≈1 token，明确标注 estimate 非精确 BPE）、可扩展 provider 价格表（`DEFAULT_PRICES`，近似公开报价、注释声明需自行核验最新价）、按模型算 prompt/completion 成本（`costFor`）、多条目汇总（`tally`）、可选 JSONL ledger 累加（`accumulate`/`readLedger`，无 ledgerPath 时保持纯函数/离线）。CLI `make cost --estimate "..."` / `--cost --model gpt-4o-mini --prompt 1000 --completion 500` / `--models`。零依赖（不引 tiktoken/bpe），与「零依赖 Node ESM」硬规则一致
+  - 配套测试：`tests/skills.test.mjs`（9 项：frontmatter 解析 / 缺字段标记 / slug 校验 / 大小写检索 / 分类过滤 / 有效性过滤 / 递归发现 / maxDepth）、`tests/cost.test.mjs`（7 项：估算/确定性/价格别名/成本计算/汇总/ledger 往返/无 ledger 纯函数）；接管入口：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `skills`、`cost`
+  - `examples/sample-skill/SKILL.md` 增补「技能会被 `scripts/skills/registry.mjs` 自动发现（`make skills`）」说明，与新基础设施对齐
+- 调研依据（≥3 类）：① GitHub `topics/multi-agent` 页面（2026-07）前列仓库 deer-flow/ruflo/CowAgent/MemOS/PraisonAI 均原生 skills 层；②「2026 年 AI Agent 技术生态开源项目合集」八维盘点——skills/plugin/memory/observability 为高权重品类；③《Agent Token 优化完全指南》(daoyuly.cn, 2026-04) 与 zylos.ai《OpenTelemetry for AI Agents》(2026-02)——确认 token 成本可见性是框架运行 LLM 的普遍诉求
+- 质量门影响：纯新增零依赖模块 + 测试 + 入口接线，不触及任何既有质量门禁脚本（`scripts/ci/*`、`scripts/eval/`）；`node --check` / `validate-config` / `observer` / `tests` 不受影响（下一步需跑全门类禁验证）
+
 ### 2026-07-09（权限阶梯 per-tool deny/ask/allow · 特性级 · 本地，未推送）
 - 完成 **ROADMAP Next「权限阶梯配置」**：在静态 `observer` 之外补上**基础设施级**运行时工具授权层（特性级，零依赖）：
   - 新增 `scripts/security/permissions.mjs`——把「Permission is infrastructure, not prompt」（Agent Security 2026 第六层栈）落地为可单测纯函数：`normalizeTool`（工具名按 `:` 命名空间分层、小写归整）/ `classifyTool`（最具体前缀匹配胜出、平局按严重度 deny>ask>allow、未命中回落 `default`）/ `isAllowed` / `resolvePolicy`（结构化 tool/level/category/reason/matched/defaulted）/ `listRules`；CLI `--list` 打印全部规则、`--tool <name>` 解析单个

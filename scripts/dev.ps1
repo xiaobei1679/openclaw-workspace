@@ -74,8 +74,15 @@ switch ($args[0]) {
   'permissions' {
     & $Node scripts/security/permissions.mjs $args[1] $args[2] $args[3]
   }
+  'skills' {
+    $skillsDir = if ($args[1]) { $args[1] } else { 'examples' }
+    & $Node scripts/skills/registry.mjs --list $skillsDir
+  }
+  'cost' {
+    & $Node scripts/llm/cost.mjs $args[1] $args[2] $args[3] $args[4] $args[5] $args[6]
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor|permissions}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor|permissions|skills|cost}'
     exit 1
   }
 }

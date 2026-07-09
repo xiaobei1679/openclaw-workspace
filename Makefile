@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor permissions help
+.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor permissions skills cost help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -67,6 +67,12 @@ doctor:  ## Pre-flight environment check (node/git/shell/env/config/llm/gates)
 
 permissions: ## Show / resolve the per-tool permission ladder (deny/ask/allow)
 	$(NODE) scripts/security/permissions.mjs $(ARGS)
+
+skills:  ## Discover & validate SKILL.md files under a dir (default: examples)
+	$(NODE) scripts/skills/registry.mjs --list $(ARGS)
+
+cost:    ## LLM token/cost helper: --estimate "text" | --cost --model X --prompt N --completion M | --models
+	$(NODE) scripts/llm/cost.mjs $(ARGS)
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

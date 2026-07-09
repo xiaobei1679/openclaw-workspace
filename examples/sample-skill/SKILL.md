@@ -45,7 +45,7 @@ console.log(`Hello, ${word}! (from sample-skill)`);
 ## 如何让你自己的技能被智能体使用
 
 1. 在 `config/openclaw.json.example` 的某 agent 的 `skills` 数组里加上技能 `name`；
-2. 或被 `find-skills` 扫描命中（取决于你的技能发现配置）；
+2. 或被 `scripts/skills/registry.mjs` 自动发现（`make skills` 会递归扫描并校验所有 `SKILL.md`，按 name/category 检索）；
 3. 智能体在 `AGENTS.md` 规范下调用，产出经 `node --check` 校验后提交。
 
 > 这是框架的一部分示例，不含任何个人数据，可安全随仓库发布。
