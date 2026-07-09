@@ -1,9 +1,9 @@
 # Roadmap — openclaw-workspace
 
 > Living backlog. The recurring "auto-improve" automation (see `AGENTS.md`) pulls from
-> here and the web to make this repo stronger over time. The 30-minute auto-iteration
-> automation pushes `origin/main` only after the Reviewer specialist (`scripts/ci/reviewer.mjs`)
-> returns PASS — no human confirmation required, but the gate is mandatory.
+> here and the web to make this repo stronger over time. The auto-iteration automation
+> (hourly) commits locally only and **never pushes**; the Reviewer specialist (`scripts/ci/reviewer.mjs`)
+> gates each local commit, and a human reviews and pushes `origin/main` manually after the daily review.
 
 ## Done ✅
 - Turnkey de-personalization (zero hardcoded paths, `.example` templates, `.gitignore` for local data)
@@ -32,7 +32,7 @@
 - **Observer Agent** (`scripts/ci/observer.mjs` + `tests/observer.test.mjs`) — automated change/PR reviewer: protected-path guard, secret scan, syntax gate, agent-contract path safety; wired into `make observer`, the pre-commit hook, and `.github/workflows/observer.yml`
 - **Router Agent** (`scripts/agent/router.mjs` + `tests/router.test.mjs`) — deterministic task planner/router: classifies intent (research/coding/writing/review/data), decomposes a task into clauses, and routes each to a specialist agent from a configurable registry; backed by `make router` / `scripts/dev.sh router` and importable by an LLM-driven agent
 - **Eval harness** (`scripts/eval/eval.mjs` + `tests/eval.test.mjs`) — the "evaluation pillar": zero-dep, CI-gated deterministic regression over the repo's pure agents (router/observer/scaffold), with an optional LLM-as-judge layer (gated by `EVAL_LLM_BASE_URL`) and `--baseline`/`--compare` drift monitoring; wired into `make eval` / `healthcheck` and `node-check.yml`
-- **Reviewer Agent (专员审核)** (`scripts/ci/reviewer.mjs` + `tests/reviewer.test.mjs`) — local full-tree review gate that aggregates syntax + config + observer + tests into one structured PASS/FAIL verdict (`runReviewer` / `verdict` / `formatReport` / `runCheck`); the engine behind `make reviewer` and the gate that lets the 30-minute automation auto-push `origin/main` only on PASS
+- **Reviewer Agent (专员审核)** (`scripts/ci/reviewer.mjs` + `tests/reviewer.test.mjs`) — local full-tree review gate that aggregates syntax + config + observer + tests into one structured PASS/FAIL verdict (`runReviewer` / `verdict` / `formatReport` / `runCheck`); the engine behind `make reviewer` and the gate that the auto-iteration automation runs before each **local** commit (it never pushes — a human pushes `origin/main` after review)
 - **Drift monitoring** — delivered inside the Eval harness via `--baseline` / `--compare` (token-overlap similarity as a zero-dep semantic-similarity proxy, flags drift < 0.98)
 - **i18n docs** — `docs/` is now consistently bilingual (Chinese first, English after): `ARCHITECTURE.md` rewritten with a full Chinese translation (system overview / autonomous pipeline / agent team / script system / CI gates / memory layers / observability), plus a new `docs/README.md` index that states the bilingual convention and links every public doc; `AGENTS.md` "See also" now points to the docs index
 - **Agent role presets** (`examples/agents/*.md` + `scripts/agent/roles.mjs` + `tests/roles.test.mjs`) — a zero-dep, verified library of reusable role definitions (reviewer / writer / memory-keeper / researcher / coder / qa / **security-auditor**) with a structured loader (`loadRole` / `loadRoles` / `getRole` / `validateRole`) and a `make roles` / `dev.sh roles` listing command; lowers contribution friction by cloning a preset instead of designing a role from scratch

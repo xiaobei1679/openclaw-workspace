@@ -5,6 +5,16 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（文档事实性订正：绝不自动推送 + 测试数刷新 · 文档级 · 本地，未推送）
+- 订正公开框架文档中**与真实铁律「只本地 commit、绝不推送远端」矛盾**的过期表述（调研 + 自查发现），落实用户「绝不骗用户」最高原则：
+  - `AGENTS.md` 两处——Tests 段「verdict that gates auto-push.」改为「gates **local** commits (it never pushes)」；Contribution flow「The 30-minute auto-iteration automation…pushes `origin/main` only when that gate returns PASS.」改为「The hourly auto-iteration automation…**never pushes to any remote**—a human reviews and pushes manually after the daily review」
+  - `ROADMAP.md` 两处——头部 blockquote「30-minute…pushes `origin/main` only after…」改为「(hourly) commits locally only and **never pushes**…a human reviews and pushes manually」；Reviewer 条目「the gate that lets the 30-minute automation auto-push `origin/main` only on PASS」改为「the gate that the auto-iteration automation runs before each **local** commit (it never pushes)」
+  - `README.md` 特性段「30 分钟自动化只有它返回 PASS 才 `git push origin main`」改为「自主迭代自动化**只本地 commit、绝不推送远端**…由用户每日 review 手动推送」
+- 刷新 README 测试徽章：写死的 `tests-75 passing` 已严重过期（早自 07-09 06:02 的 75 项），更新为实测 **234 passing**（与本轮 `node --test` 结果一致），避免对外展示虚假指标
+- 调研依据（≥3 类）：① 2026 主流多智能体框架（MetaGPT/LangGraph/CrewAI/AutoGen）横评一致将「清晰文档 + CI 一致 + 贡献者信任」列为生产级标配（jishuzhan / cloud.tencent / xtechtools）；② 开源信任来自「可观测、可重复、可审计的流程」（百度文库开源信任危机、CSDN 文档规范指南一致结论）——文档与真实行为不一致本身即侵蚀信任；③ GitHub topics `awesome-ai-agents-2026` / `multi-agent` 确认本仓功能/测试/安全/可观测/评估/发布/命令参考全链路已达高成熟度，剩余 ROADMAP Next 项均被约束挡住（改质量门禁脚本/需用户设源/特性级违暂停原则），唯一真实缺口是**文档自身的事实性**
+- 质量门影响：纯 Markdown 文档订正（3 文件），不触及任何 `.js/.mjs` 质量门禁脚本与 `scripts/eval/`；`node --check`(78/78) / `validate-config` / `observer --diff`(3 文件零违规) / `node --test`(234/234) / `reviewer` VERDICT: PASS 全过
+- `ROADMAP.md` 无新增项（此为文档订正，非功能落地）
+
 ### 2026-07-09（命令参考文档 COMMANDS.md · 文档级 · 本地，未推送）
 - 完成一处**真实、安全、文档级**的可发现性缺口：本仓库 dev 命令已增至 ~23 个（质量门禁 / 智能体运行时 / 角色技能 / 框架演化 / 发布 / LLM 工具 / 权限 / 安装 / 每日复盘），但 `docs/README.md` 仅索引概念文档、`make help` 仅英文，新用户难一眼摸清全套能力。
   - 新增 `docs/COMMANDS.md`——中英双语（单文件双语约定：中文在前、英文在后）汇总**全部开发命令**，按类别分组（质量门禁 / 智能体运行时 / 角色与技能 / 框架演化 / 发布 / LLM 工具 / 权限 / 安装 / 每日复盘 / 帮助），每条含说明与关键参数/环境变量；另附「常用环境变量表」与「绝不 git push / 零依赖 / 入口等价」三条铁律说明
