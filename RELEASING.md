@@ -49,6 +49,19 @@ git push origin main
 
 ---
 
+## 打 tag 即自动发布（人类触发，可选）
+
+仓库带 `.github/workflows/release.yml`：当你**手动推送一个语义化 tag**（如 `v1.0.0`）时，GitHub Actions 会自动：
+1. 跑完整 healthcheck（语法 + 配置 + 测试 + eval）；
+2. 用 `scripts/release/notes.mjs` 解析 `CHANGELOG.md` 的「公开框架」段，生成 `release-notes.md`；
+3. 用 `softprops/action-gh-release` + 自动注入的 `GITHUB_TOKEN` 创建 GitHub Release。
+
+> 这是纯人类动作：自动化工位**绝不打 tag**，所以永远不会触发它。
+> 也可在 GitHub 的 Actions 页手动 `workflow_dispatch` 触发。
+> 本地预览发布说明：`make release-notes`（写入 `release-notes.md`，已 gitignore）。
+
+---
+
 ## 自动化上下文
 
 - 自动化工位：`automation-1783526614419`（每小时触发）

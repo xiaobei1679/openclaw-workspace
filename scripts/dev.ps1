@@ -47,8 +47,29 @@ switch ($args[0]) {
   'dashboard' {
     & $Node scripts/dashboard.mjs
   }
+  'install-hooks' {
+    bash scripts/install-hooks.sh
+  }
+  'observer' {
+    & $Node scripts/ci/observer.mjs --diff
+  }
+  'router' {
+    & $Node scripts/agent/router.mjs $args[1] $args[2] $args[3] $args[4]
+  }
+  'reviewer' {
+    & $Node scripts/ci/reviewer.mjs $args[1] $args[2] $args[3]
+  }
+  'roles' {
+    & $Node scripts/agent/roles.mjs $args[1]
+  }
+  'evolve' {
+    & $Node scripts/evolve/ingest.mjs $args[1] $args[2] $args[3]
+  }
+  'release-notes' {
+    & $Node scripts/release/notes.mjs $args[1] $args[2] $args[3] $args[4] $args[5]
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes}'
     exit 1
   }
 }

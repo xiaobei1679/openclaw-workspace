@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Release 工作流 · 特性级 · 本地，未推送）
+- 完成 **ROADMAP Later「Release workflow（tags → changelog → GitHub Release）」**：让"打 tag 即自动发布"成为框架标配（特性级，零依赖配套）：
+  - 新增 `.github/workflows/release.yml`：仅当人类手动推送语义化 tag（`v*`）或手动 `workflow_dispatch` 时触发；先跑完整 healthcheck（语法 + 配置 + 测试 + eval），再用 `softprops/action-gh-release@v2` + 自动注入的 `GITHUB_TOKEN` 创建 GitHub Release（**不含任何显式 token 行**，`observer` 密钥扫描天然放行）。本地每小时自动化工位绝不打 tag，永不触发此流程——严守"只改本地、绝不推送"铁律
+  - 新增零依赖 **发布说明生成器** `scripts/release/notes.mjs`：纯函数 `findPublicSection` / `parseEntries` / `cleanTitle`（剥离内部「本地，未推送」标记）/ `extractEntries`（支持 `--count`/`--since`）/ `formatReleaseNotes`（确定性）/ `buildRelease`；CLI `--changelog`/`--version`/`--out`/`--json`，解析 `CHANGELOG.md` 的「公开框架」段并**截断于内部项目段**（防隐私泄漏）
+  - 新增 `tests/release-notes.test.mjs`（9 测试）：覆盖公开段提取（排除内部「项目转向」段）/ 条目解析顺序 / 标题清洗 / count 与 since 过滤 / 确定性 / 缺段优雅降级
+  - 接入：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `release-notes`（写入 `release-notes.md`，已 gitignore）；顺带**补齐 Windows 侧 `dev.ps1`**（此前落后于 `dev.sh`/`Makefile`：缺 `install-hooks`/`observer`/`router`/`reviewer`/`roles`/`evolve`，本次一并补齐）
+- 调研依据：GitHub 官方《Releasing and maintaining actions》主张"语义化 tag + Release 工作流 + 自动测试护栏"；开源 agent 框架（googleapis/release-please、oneuptime 自动化发布实践）普遍把"changelog 生成→Release 创建"做成 CI 一环；本仓库用零依赖薄脚本替代 release-please 的重依赖，把产出直接喂给 `softprops/action-gh-release`，与"零依赖 Node ESM"硬规则一致
+- `ROADMAP.md`：Release workflow（Later→Done）；Windows `dev.ps1` 同步（缺命令补齐）
+
 ### 2026-07-09（LLM Adapter 适配层 · 特性级 · 本地，未推送）
 - 完成 **ROADMAP Next/Later「Adapter 层」**：让同一套 agent 脚本在 **OpenAI / DeepSeek / Qwen(DashScope) / Moonshot(Kimi) / SiliconFlow / Ollama** 上统一运行（特性级，零依赖）：
   - 新增 `scripts/llm/adapter.mjs`——薄适配层，把 provider 名解析为有效连接配置：
