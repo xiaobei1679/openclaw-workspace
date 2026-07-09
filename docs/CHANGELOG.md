@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（security-auditor 角色预设 · 文档级 · 本地，未推送）
+- 新增第 7 个开箱即用智能体角色预设 `examples/agents/security-auditor.md`，把「安全审计」做成可复用、可克隆的提示模板（文档级，低风险高价值）：
+  - 与既有 `reviewer`（质量 / 契约）互补：`reviewer` 守契约与质量门，`security-auditor` 守**安全红线**——侧重**逻辑层**风险（最小权限、注入面、记忆 / 多智能体越界），这些是静态 `observer.mjs` 抓不到的；二者共用同一套安全红线（无明文密钥 / 无个人数据 / 无硬编码绝对路径）
+  - 角色提示结构化覆盖 **OWASP《AI Agent Security Cheat Sheet》九大实践领域**：工具最小权限 / 输入校验与提示注入防御 / 记忆与上下文安全 / 人工介入 / 输出护栏 / 监控可观测 / 多智能体安全 / 数据保护隐私 / 安全测试与对抗验证；末附 OWASP Do's and Don'ts 红线
+  - 沿用既有 `role-meta` 契约（id/name/description/skills + 正文系统提示），与 `scripts/agent/roles.mjs` 加载器及 `tests/roles.test.mjs` 完全兼容
+- 配套更新：`tests/roles.test.mjs` 预设数量下限 `>=6` → `>=7`（明确 7 个预设为基线，防回归删减）；`ROADMAP.md` Done「Agent role presets」补列 security-auditor
+- 调研依据（≥3 类）：① OWASP《Agentic AI Top 10》（2025-12 发布，全球首个自主 Agent 安全风险框架）；② OWASP《AI Agent Security Cheat Sheet》（9 大实践领域 + Do's/Don'ts + 滥用案例测试矩阵）；③ 全网检索 agent 安全清单（prompt injection / 密钥扫描 / 最小特权 / 多智能体越界）——一致结论：安全审计正成为 agent 框架标配，且应「静态 CI 门（observer）+ 角色级逻辑审查（本预设）」双层互补
+- 质量门影响：纯 Markdown 预设 + 测试下限微调，不触及任何 `.js/.mjs` 质量门脚本与 `scripts/eval/`；`node --check` / `validate-config` / `observer` 不受影响
+
 ### 2026-07-09（环境预检 doctor 命令 · 特性级 · 本地，未推送）
 - 新增**环境就绪预检** `scripts/doctor.mjs`：本仓库核心是「开箱即跑（turnkey）」，但 `make healthcheck` 只验代码（语法/配置/测试），不验**本机是否就绪**——新增 `doctor` 补上环境层这一缺口（特性级，零依赖）：
   - 7 项检查，纯函数 + 可注入 IO 边界（opts 注入 git/探针/exists/env/nodeVersion），离线可单测，与 `respond.mjs` 的 `callLLM`/`commitLocally` 同一套依赖注入理念：`checkNode`（Node >= 18，ESM+内置 test runner）/ `checkGit` / `checkShell`（bash 或 pwsh 至少一个）/ `checkEnvFiles`（`.env` 或模板）/ `checkConfigFiles`（`config/openclaw.json` 或模板）/ `checkLLMBackend`（Ollama 免密钥 / 远端 baseUrl / key，缺则为 warn 不阻塞）/ `checkGates`（五大质量门禁脚本存在性）

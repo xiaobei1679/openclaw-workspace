@@ -73,7 +73,7 @@ test('loadRole handles a missing meta block as invalid', () => {
 
 test('loadRoles over real presets: all valid and unique ids', () => {
   const { roles, errors, duplicateIds } = loadRoles(REAL_DIR);
-  assert.ok(roles.length >= 6, `expected >=6 presets, got ${roles.length}`);
+  assert.ok(roles.length >= 7, `expected >=7 presets, got ${roles.length}`);
   assert.deepEqual(errors, [], `preset errors: ${errors.join(' | ')}`);
   assert.deepEqual(duplicateIds, [], `duplicate ids: ${duplicateIds.join(',')}`);
   for (const r of roles) {
