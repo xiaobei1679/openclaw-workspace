@@ -40,13 +40,15 @@ build/
 .vscode/
 .idea/
 .obsidian/
-.workbuddy/          # WorkBuddy/automation session dir (agent runtime state; not framework source)
+# WorkBuddy/automation session dir (agent runtime state; not framework source)
+.workbuddy/
 
 # Auto-generated
 .auto-gen/
 瓶颈检测/
 心跳日志/
-insights-out/          # generated proposals from `make evolve` (not published)
+# generated proposals from `make evolve` (not published)
+insights-out/
 
 # Local collected insights (local data; the real source is the user's own
 # collected material — set OPENCLAW_INSIGHTS_DIR or drop files in ./insights;
