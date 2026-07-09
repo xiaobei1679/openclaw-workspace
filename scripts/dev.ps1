@@ -81,8 +81,14 @@ switch ($args[0]) {
   'cost' {
     & $Node scripts/llm/cost.mjs $args[1] $args[2] $args[3] $args[4] $args[5] $args[6]
   }
+  'llm-cache' {
+    & $Node scripts/llm/cache.mjs $args[1] $args[2] $args[3] $args[4] $args[5] $args[6]
+  }
+  'circuit-breaker' {
+    & $Node scripts/llm/circuit-breaker.mjs $args[1] $args[2] $args[3]
+  }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor|permissions|skills|cost}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter|install-hooks|observer|router|reviewer|roles|evolve|release-notes|doctor|permissions|skills|cost|llm-cache|circuit-breaker}'
     exit 1
   }
 }

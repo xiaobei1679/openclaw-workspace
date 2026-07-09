@@ -64,6 +64,9 @@ insights-out/
 # Generated release notes (written by `make release-notes` / release.yml)
 release-notes.md
 
+# LLM response cache ledger (written by `make llm-cache`; regenerated, not published)
+.cache/
+
 # Agent temp comment file
 .agent-comment.tmp
 

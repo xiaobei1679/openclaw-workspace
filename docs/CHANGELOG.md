@@ -5,6 +5,17 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（LLM 响应缓存 + 熔断器 · 特性级 · 本地，未推送）
+- 完成用户"去 GitHub 等站搜可借鉴/可复制功能"指示的第二轮落地——在既有 `cost.mjs` 与 `respond.mjs` 重试之上，补上两块零依赖 LLM 弹性基础设施（均经 GitHub 直搜 + 技术站点核实可复制、零依赖可行）：
+  - **LLM 响应缓存（prompt caching）** `scripts/llm/cache.mjs`（特性级，零依赖）：把"相同 `(provider,model,采样,messages)` 请求命中缓存跳过重复 LLM 调用"做成可机器化复用能力。纯函数 `canonicalRequest`（role 小写、content 去首尾空格、采样参数归一）/ `cacheKey`（SHA-256 稳定键）/ `lookup` / `store` / `withCache`（命中则不调 `callLLM`、`cached:true`）/ `stats`；账本默认 `.cache/llm-cache.json`（新增 gitignore），可注入 `fs` 离线可单测。CLI `make llm-cache --messages '<json>' [--model X]` / `--stats`
+  - **熔断器** `scripts/llm/circuit-breaker.mjs`（特性级，零依赖）：CLOSED/OPEN/HALF_OPEN 纯状态机，补"持续故障短路"——`createBreaker({ failureThreshold, cooldownMs, successThreshold, now })`，`exec` 在 OPEN 未冷却时抛 `CircuitOpenError` 且不调 fn，冷却后放行探针、`successThreshold` 次成功闭合；`withBreaker` 便捷包裹；可注入 `now` 离线可单测。CLI `make circuit-breaker --demo`（无真实等待走完状态机）
+  - 二者与既有"超时+瞬态重试"正交可叠加（缓存最外层→熔断中层→重试内层），组合示例见 `docs/LLM_RESILIENCE.md`；均未自动改写 `respond.mjs` 生产路径（保持默认行为、不触碰离线契约测试），仅作可 import 库 + 文档示例
+  - 配套测试：`tests/cache.test.mjs`（6 测试：归一化/确定性/按模型·温度·内容区分/查miss→存→查hit 往返/withCache 仅调一次/统计计数）、`tests/circuit-breaker.test.mjs`（7 测试：CLOSED 成功/阈值跳闸/冷却前拒连且不调 fn/冷却后半开并闭合/半开失败重开/CLOSED 成功治愈/withBreaker 路由）；接入：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `llm-cache`、`circuit-breaker`；`.gitignore` 忽略 `.cache/`
+- 调研依据（≥4 类）：① GitHub 直搜 `llm response cache prompt caching`：`messkan/prompt-cache`（降本至 80%）、`karthyick/prompt-cache`（装饰器式语义缓存）；② 设计文 `yuanchaofa.com`《Agent 系统中的 Prompt Caching 设计》、`xirain.github.io`《LLM Agent Prompt Cache 深入浅出》——Agent 比 Chatbot 更需缓存、请求布局影响命中；③ GitHub 直搜 `circuit breaker node zero dependency`：`rheatkhs/yves-circuit-breaker`（明确"零依赖、纯逻辑、框架无关"）、`ayushedith/retryify`（retry/backoff/timeout/breaker 一体）；④ `dev.to` wallacefreitas / young_gao 的 CLOSED/OPEN/HALF_OPEN 状态机实现。均满足"零依赖 Node ESM"硬规则
+- 同期检索但**暂缓/不采纳**（诚实标注）：最小 MCP 客户端（dyneth02/MCP-Client-Server-NodeJS，协议面大、风险高，列 ROADMAP Next）、结构化输出校验（darshjme/agent-schema，与 `respond.mjs` 解析重叠）、语义缓存（需嵌入模型，过度工程）、重试一体（既有重试已覆盖）；完整候选表与决策见 `docs/research/2026-07-09-github-features.md`
+- 验证：check-syntax 全过（含 2 新脚本）、validate-config、observer --diff 无违规、node --test 全绿（新增 13 项）、reviewer VERDICT: PASS
+- `ROADMAP.md`：Done 新增「LLM 响应缓存」「熔断器」；`docs/LLM_RESILIENCE.md` 新增（缓存/熔断 API + respond.mjs 接入示例 + 组合）；`docs/research/2026-07-09-github-features.md` 新增（GitHub 候选表 + 来源链接）
+
 ### 2026-07-09（Skills 注册/发现层 + Token/成本追踪 · 特性级 · 本地，未推送）
 - 借鉴 2026-07 GitHub `multi-agent` 主题热门框架（deer-flow / ruflo / CowAgent / MemOS / PraisonAI 均把 **skills** 作为一等原语；token/成本追踪为普遍刚需），补上本仓库缺失的两块零依赖基础设施层：
   - **Skills 注册/发现层** `scripts/skills/registry.mjs`（特性级，零依赖）：解析 `SKILL.md` frontmatter、递归发现技能（`discoverSkills`，`maxDepth` 限深、跳过 `node_modules/.git/.workbuddy`）、校验必填字段（`name`/`description` + 小写 slug 约定）、按 name/分类检索（`getSkill` 大小写不敏感 / `filterByCategory` / `listValid`）。核心函数纯函数可单测，发现层走 fs 薄封装。CLI `make skills`（默认扫 `examples`）。让「有 roles 但无 skill 注册」的复用摩擦彻底消失——agent 调用技能前可机器化发现与校验

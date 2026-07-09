@@ -2,7 +2,7 @@
 # Windows users: use scripts/dev.ps1 (no make needed)
 # *nix users: use scripts/dev.sh or this Makefile
 
-.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor permissions skills cost help
+.PHONY: check test validate healthcheck run-agent install verify review reviewer install-hooks observer router eval roles evolve dashboard llm-adapter release-notes doctor permissions skills cost llm-cache circuit-breaker help
 
 check:   ## Syntax-check every tracked script
 	$(NODE) scripts/ci/check-syntax.mjs
@@ -73,6 +73,12 @@ skills:  ## Discover & validate SKILL.md files under a dir (default: examples)
 
 cost:    ## LLM token/cost helper: --estimate "text" | --cost --model X --prompt N --completion M | --models
 	$(NODE) scripts/llm/cost.mjs $(ARGS)
+
+llm-cache: ## LLM response cache (prompt caching): --messages '<json>' [--model X] | --stats [<ledger>]
+	$(NODE) scripts/llm/cache.mjs $(ARGS)
+
+circuit-breaker: ## Circuit breaker demo: CLOSED/OPEN/HALF_OPEN walk-through (--demo)
+	$(NODE) scripts/llm/circuit-breaker.mjs $(ARGS)
 
 help:    ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n", $$1, $$2}'

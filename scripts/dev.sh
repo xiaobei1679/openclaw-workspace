@@ -70,6 +70,12 @@ case "${1:-help}" in
   cost)
     "$NODE_BIN" scripts/llm/cost.mjs $2 $3 $4 $5 $6 $7
     ;;
+  llm-cache)
+    "$NODE_BIN" scripts/llm/cache.mjs $2 $3 $4 $5 $6 $7
+    ;;
+  circuit-breaker)
+    "$NODE_BIN" scripts/llm/circuit-breaker.mjs $2 $3 $4
+    ;;
   review)
     # Daily review gate: show everything not yet on the remote, then healthcheck.
     echo "=== Unpushed commits (local vs origin/main) ==="
@@ -96,7 +102,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard|llm-adapter|release-notes|doctor|permissions|skills|cost}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard|llm-adapter|release-notes|doctor|permissions|skills|cost|llm-cache|circuit-breaker}"
     exit 1
     ;;
 esac
