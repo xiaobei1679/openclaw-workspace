@@ -135,7 +135,7 @@ if (isMain) {
       // 2 consecutive failures -> OPEN
       for (let i = 0; i < 2; i++) {
         try {
-          b.exec(fail);
+          await b.exec(fail);
         } catch {
           /* expected */
         }
@@ -144,7 +144,7 @@ if (isMain) {
       // still OPEN before cooldown: fn not called, throws CircuitOpenError
       let called = 0;
       try {
-        b.exec(() => {
+        await b.exec(() => {
           called++;
           throw new Error('x');
         });
@@ -154,25 +154,31 @@ if (isMain) {
       // advance past cooldown -> next exec probes (HALF_OPEN)
       t = 200;
       try {
-        b.exec(ok);
+        await b.exec(ok);
       } catch {
         /* not expected */
       }
       log.push(`after cooldown + 1 success: ${b.state}`);
       // 2nd success -> CLOSED
       try {
-        b.exec(ok);
+        await b.exec(ok);
       } catch {
         /* not expected */
       }
       log.push(`after 2nd success: ${b.state}`);
-      // a failure in CLOSED re-accumulates
+      // failures re-accumulate in CLOSED; 2 trips OPEN again
       try {
-        b.exec(fail);
+        await b.exec(fail);
       } catch {
         /* expected */
       }
       log.push(`after 1 failure in closed: ${b.state} (failures=${b.failures})`);
+      try {
+        await b.exec(fail);
+      } catch {
+        /* expected */
+      }
+      log.push(`after 2 failures in closed: ${b.state} (failures=${b.failures})`);
       console.log(log.join('\n'));
     } else {
       printHelp();
