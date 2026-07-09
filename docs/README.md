@@ -21,6 +21,7 @@ Language-neutral ASCII diagrams are shared by both versions. Internal docs (team
 | [`AGENT_CONTRACT.md`](AGENT_CONTRACT.md) | 智能体交互契约：任务格式、改动 JSON、路径安全、质量护栏 / Agent interaction contract: task format, change JSON, path safety, quality guardrails | 中英双语 Bilingual |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 系统架构、自主智能体管线、CI 质量门、记忆层级、可观测性 / System architecture, autonomous pipeline, CI gates, memory layers, observability | 中英双语 Bilingual |
 | [`CHANGELOG.md`](CHANGELOG.md) | 仓库（公开框架）与项目演进记录 / Repo (public framework) & project changelog | 中英混合 Mixed |
+| [`COMMANDS.md`](COMMANDS.md) | 全部开发命令参考（make/dev.sh/dev.ps1 等价入口 + 环境变量）/ Full dev-command reference (make/dev.sh/dev.ps1 equivalent entrypoints + env vars) | 中英双语 Bilingual |
 
 ## 其他入口 / Other entry points
 

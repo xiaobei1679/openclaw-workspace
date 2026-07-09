@@ -5,6 +5,13 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（命令参考文档 COMMANDS.md · 文档级 · 本地，未推送）
+- 完成一处**真实、安全、文档级**的可发现性缺口：本仓库 dev 命令已增至 ~23 个（质量门禁 / 智能体运行时 / 角色技能 / 框架演化 / 发布 / LLM 工具 / 权限 / 安装 / 每日复盘），但 `docs/README.md` 仅索引概念文档、`make help` 仅英文，新用户难一眼摸清全套能力。
+  - 新增 `docs/COMMANDS.md`——中英双语（单文件双语约定：中文在前、英文在后）汇总**全部开发命令**，按类别分组（质量门禁 / 智能体运行时 / 角色与技能 / 框架演化 / 发布 / LLM 工具 / 权限 / 安装 / 每日复盘 / 帮助），每条含说明与关键参数/环境变量；另附「常用环境变量表」与「绝不 git push / 零依赖 / 入口等价」三条铁律说明
+  - `docs/README.md` 文档清单新增 `COMMANDS.md` 一行（中英双语标注），提升导航性
+- 调研依据（≥3 类）：① 本轮 WebSearch 多源确认 2026 主流多智能体框架（LangGraph/CrewAI/AutoGen/Claude Agent SDK/OpenAI Agents）已将「清晰 CLI + 开发者文档」列为生产级标配（jishuzhan 对比、langcopilot 分档、daoyuly 趋势、awesome-ai-agents-2026）；② 本仓库既有 `Makefile`/`dev.sh`/`dev.ps1` 三入口命令已高度完整但缺统一中文文档入口；③ 对齐本仓库「单文件双语」i18n 约定（docs/README.md 已立）。本改进属「文档级打磨」——呼应上轮落地的 anti-over-engineering 原则（「文档级打磨可，堆特性不可」），在框架已达高成熟度时不堆特性、只补可发现性
+- 质量门影响：纯 Markdown 文档（新增 + 索引一行），不触及任何 `.js/.mjs` 质量门禁脚本与 `scripts/eval/`；`node --check` / `validate-config` / `observer` / `tests` 不受影响
+
 ### 2026-07-09（缓存 + 熔断器默认接入 respond.mjs 生产路径 · 特性级 · 本地，未推送）
 - 按用户指示，把上一轮落地的两块零依赖 LLM 弹性基础设施**默认接入自主智能体生产路径**（`scripts/agent/respond.mjs` 的 `callLLM`），不再是"仅作可 import 库 + 文档示例"：
   - **重构 `callLLM`**：抽出真实网络交换 `doFetch`（保留原有的超时 / 瞬态重试 / 2MB 响应上限 / 解析诊断），在其外层叠① prompt 缓存查命中（命中则跳过网络、直接返回）→ ② 熔断器包裹 `doFetch`（OPEN 时快速失败、不空转重试）→ ③ 成功后落缓存
