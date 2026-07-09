@@ -15,7 +15,7 @@
 // No network calls.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { callLLM, runAgentOffline, parseFiles } from '../scripts/agent/respond.mjs';
+import { callLLM, runAgentOffline, parseFiles, commitLocally } from '../scripts/agent/respond.mjs';
 import { chatCompletionsUrl } from '../scripts/llm/adapter.mjs';
 
 // Build a fake `fetch` that records the request and returns a controllable
@@ -245,4 +245,26 @@ test('runAgentOffline: an explicit LLM refusal propagates as an error', async ()
 test('parseFiles: fenced JSON array round-trips unchanged', () => {
   const files = parseFiles('```json\n[{"path":"README.md","content":"x"}]\n```');
   assert.deepEqual(files, [{ path: 'README.md', content: 'x' }]);
+});
+
+// ---------------------------------------------------------------------------
+// Local commit path — offline-verifiable via the injectable git backend seam.
+// Proves the autonomous agent's git TOOL calls (checkout / add / commit) run
+// exactly as specified, WITHOUT touching the real repository. This is the
+// "tool-contract testing" layer (Tian Pan, "three-layer CI for AI agents",
+// 2026-04): assert the exact commands the agent would issue to git.
+// ---------------------------------------------------------------------------
+test('commitLocally: runs the exact git checkout/add/commit tool calls via injected backend', () => {
+  const cmds = [];
+  const fakeGit = (args, opts) => { cmds.push({ args, opts }); };
+  const branch = commitLocally({ title: 'my local task', now: () => 12345, git: fakeGit });
+  assert.equal(branch, 'agent/local-12345');
+  assert.equal(cmds.length, 3, 'should issue exactly: checkout, add, commit');
+  assert.equal(cmds[0].args, 'checkout -B agent/local-12345');
+  assert.equal(cmds[1].args, 'add -A');
+  assert.equal(
+    cmds[2].args,
+    '-c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: my local task"'
+  );
+  assert.deepEqual(cmds[2].opts, { stdio: 'pipe' }, 'commit must pipe stdout (non-fatal)');
 });

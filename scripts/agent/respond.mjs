@@ -258,6 +258,27 @@ export function safePath(p) {
   return full;
 }
 
+// Injectable git backend for the LOCAL commit path — the dependency-injection
+// seam (symmetric with callLLM's `opts.fetch` and adapter's `createClient`) that
+// makes the autonomous agent's git TOOL calls offline-testable. Per Tian Pan,
+// "How to Integration-Test AI Agent Workflows in CI" (2026-04): the third layer
+// of agent CI is TOOL-CONTRACT testing — mock the agent's tool calls (git, fs)
+// and assert the EXACT commands, fully offline. The default backend is real
+// `execSync`; tests substitute a fake that records commands. Behavior is
+// identical to the previous inline implementation.
+//   contract: checkout a fresh local branch → stage everything → commit as the
+//   fixed bot identity (non-fatal, piped stdout).
+export function commitLocally({ title, now = Date.now, git = defaultGit } = {}) {
+  const branch = `agent/local-${now()}`;
+  git(`checkout -B ${branch}`);
+  git('add -A');
+  git(`-c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: ${title}"`, { stdio: 'pipe' });
+  return branch;
+}
+function defaultGit(args, opts) {
+  execSync(`git ${args}`, opts);
+}
+
 function nodeCheck(paths) {
   for (const f of paths) {
     if (/\.(js|mjs|cjs)$/i.test(f)) {
@@ -335,13 +356,7 @@ async function main() {
   trace('check_pass');
 
   if (task.local) {
-    const branch = `agent/local-${Date.now()}`;
-    execSync(`git checkout -B ${branch}`);
-    execSync('git add -A');
-    execSync(
-      `git -c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: ${task.title}"`,
-      { stdio: 'pipe' }
-    );
+    const branch = commitLocally({ title: task.title });
     console.log(`✅ 本地改动已提交到分支 ${branch}，请人工 review 后再 push / 开 PR。`);
     trace('committed', { branch, local: true });
     return;
