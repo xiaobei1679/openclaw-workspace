@@ -135,17 +135,25 @@ function getTask() {
   return { title: issue.title, body: issue.body || '', number: issue.number, local: false };
 }
 
-async function callLLM(system, user, attempt = 0) {
+// Internal LLM network boundary. The fetch implementation is injectable via
+// `opts.fetch` — the dependency-injection seam (symmetric with scripts/llm/
+// adapter.mjs's createClient) that lets tests / proxies / logging middleware
+// substitute a fake without polluting product code with `if TESTING:` branches.
+// `opts.config` overrides the resolved module config (so the auth-header contract
+// can be asserted with/without a key). Defaults keep the legacy behavior identical.
+export async function callLLM(system, user, opts = {}, attempt = 0) {
+  const fetchImpl = opts.fetch || globalThis.fetch;
+  const cfg = opts.config || LLM;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
-  const headers = buildHeaders(LLM.apiKey);
+  const headers = buildHeaders(cfg.apiKey);
   try {
-    const res = await fetch(chatCompletionsUrl(LLM.baseUrl), {
+    const res = await fetchImpl(chatCompletionsUrl(cfg.baseUrl), {
       method: 'POST',
       headers,
       signal: controller.signal,
       body: JSON.stringify({
-        model: LLM.model,
+        model: cfg.model,
         temperature: 0.2,
         messages: [
           { role: 'system', content: system },
@@ -168,12 +176,60 @@ async function callLLM(system, user, attempt = 0) {
     // Retry once on transient failures (network errors / aborts that aren't from real timeouts).
     if (attempt < LLM_RETRIES && (e.name === 'AbortError' || e.cause?.code === 'ECONNRESET' || e.cause?.code === 'ECONNREFUSED')) {
       trace('llm_retry', { attempt: attempt + 1, error: e.message });
-      return callLLM(system, user, attempt + 1);
+      return callLLM(system, user, opts, attempt + 1);
     }
     throw e;
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Build the system + user prompts an autonomous agent run uses. Reading the
+// file tree and AGENTS.md is read-only, so this is safe to call from tests and
+// from runAgentOffline.
+function buildAgentPrompts(task) {
+  const tree = execSync('git ls-files', { encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean)
+    .join('\n');
+  const agentsMd = existsSync('AGENTS.md') ? readFileSync('AGENTS.md', 'utf8') : '';
+  const system =
+    `You are an autonomous coding agent for the openclaw-workspace repository.\n` +
+    `Follow these repo rules strictly (from AGENTS.md):\n` +
+    `- NEVER hardcode absolute paths; use env vars / os.homedir().\n` +
+    `- NEVER edit or commit secrets (config/openclaw.json, .env) or personal data.\n` +
+    `- Every .js must pass 'node --check'; use // comments, never #.\n` +
+    `- Keep scripts cross-platform (no 2>nul / where / findstr).\n` +
+    `- Reuse helpers in workspace/.learnings/scripts/lib/common.js.\n` +
+    `You may ONLY edit files that already exist in the repo (or add new files under existing directories).\n` +
+    `NEVER edit config/openclaw.json or .env.\n` +
+    `Output ONLY a fenced \`\`\`json code block containing a JSON array of objects:\n` +
+    `  [{"path": "relative/path", "content": "<full new file content>"}]\n` +
+    `Include ONLY files you changed. If you cannot safely complete the task, output {"error":"reason"}.`;
+  const user =
+    `Repository file tree:\n${tree}\n\n` +
+    `AGENTS.md:\n${agentsMd}\n\n` +
+    `TASK${task.number ? ' (issue #' + task.number + ')' : ' (local)'}\n` +
+    `Title: ${task.title}\n\nBody:\n${task.body || '(empty)'}\n\n` +
+    `Produce the changes now.`;
+  return { system, user };
+}
+
+// Offline, side-effect-free smoke of the agent pipeline's CONTRACT path:
+//   task → build prompts → LLM (injected fake) → parseFiles → safePath validation.
+// It does NOT write to disk and does NOT touch git, so it is safe to run in CI
+// without a real LLM — the offline equivalent of the Ollama end-to-end
+// verification the sandbox cannot perform. Returns { files, resolved } where
+// resolved[i].full is the repo-absolute path (validated by safePath). Throws if
+// the LLM output fails the parse contract or any path escapes the repo / hits a
+// forbidden secret file.
+export async function runAgentOffline({ task, fetchImpl = globalThis.fetch } = {}) {
+  const t = task || { title: 'offline smoke', body: '', local: true };
+  const { system, user } = buildAgentPrompts(t);
+  const text = await callLLM(system, user, { fetch: fetchImpl });
+  const files = parseFiles(text);
+  const resolved = files.map((f) => ({ path: f.path, full: safePath(f.path), content: f.content }));
+  return { files, resolved };
 }
 
 export function parseFiles(text) {
@@ -233,32 +289,7 @@ async function main() {
     return;
   }
 
-  const tree = execSync('git ls-files', { encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean)
-    .join('\n');
-  const agentsMd = existsSync('AGENTS.md') ? readFileSync('AGENTS.md', 'utf8') : '';
-
-  const system =
-    `You are an autonomous coding agent for the openclaw-workspace repository.\n` +
-    `Follow these repo rules strictly (from AGENTS.md):\n` +
-    `- NEVER hardcode absolute paths; use env vars / os.homedir().\n` +
-    `- NEVER edit or commit secrets (config/openclaw.json, .env) or personal data.\n` +
-    `- Every .js must pass 'node --check'; use // comments, never #.\n` +
-    `- Keep scripts cross-platform (no 2>nul / where / findstr).\n` +
-    `- Reuse helpers in workspace/.learnings/scripts/lib/common.js.\n` +
-    `You may ONLY edit files that already exist in the repo (or add new files under existing directories).\n` +
-    `NEVER edit config/openclaw.json or .env.\n` +
-    `Output ONLY a fenced \`\`\`json code block containing a JSON array of objects:\n` +
-    `  [{"path": "relative/path", "content": "<full new file content>"}]\n` +
-    `Include ONLY files you changed. If you cannot safely complete the task, output {"error":"reason"}.`;
-
-  const user =
-    `Repository file tree:\n${tree}\n\n` +
-    `AGENTS.md:\n${agentsMd}\n\n` +
-    `TASK${task.number ? ' (issue #' + task.number + ')' : ' (local)'}\n` +
-    `Title: ${task.title}\n\nBody:\n${task.body || '(empty)'}\n\n` +
-    `Produce the changes now.`;
+  const { system, user } = buildAgentPrompts(task);
 
   comment(
     `🤖 收到，正在根据 AGENTS.md 分析任务${task.number ? ' #' + task.number : '（本地）'} 并生成改动…` +

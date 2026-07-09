@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（respond.mjs 可注入 fetch 缝 + 离线端到端冒烟 · 特性级 · 本地，未推送）
+- 完成上轮建议"给 respond.mjs 的 callLLM 也加可注入 fetch 缝（与 adapter 对称），让 agent 管线可做离线端到端冒烟测试"——把自主智能体管线的 LLM 网络边界做成离线可验证（特性级，零依赖）：
+  - `scripts/agent/respond.mjs` 的 `callLLM` 现接受 `opts.fetch`（默认仍走 `globalThis.fetch`，**行为完全等价**）与 `opts.config`（默认模块 `LLM`）；调用形态不变，生产代码无 `if TESTING:` 污染——与 `scripts/llm/adapter.mjs` 的 `createClient(opts.fetch)` 完全对称
+  - 抽取 `buildAgentPrompts(task)`（只读 `git ls-files` + `AGENTS.md`，无副作用），`main()` 复用之；新增 `runAgentOffline({ task, fetchImpl })` 导出——离线、无磁盘写入、不碰 git 地跑通"任务 → 提示词 → LLM(假) → parseFiles → safePath 校验"全契约路径，是沙箱无法做的"真实 Ollama 端到端"的离线等价物
+  - 新增 `tests/respond.test.mjs`（15 测试，Tier-1 stub fake，零网络）：镜像 `tests/adapter-client.test.mjs` 断言真实请求契约（精确 `/chat/completions` 端点 / Bearer 仅含 key 时存在 / 请求体含 model+temperature(0.2)+归一化 messages / 真实响应解析 / 非 2xx 抛错 / 超 2MB 拒绝 / 瞬态 ECONNRESET 重试一次后成功 / 重试耗尽重抛），外加 `runAgentOffline` 离线端到端断言（解析假 LLM 响应为已校验的库内文件 / 越界路径被 safePath 拒绝 / `.env` 等密钥文件被拒 / 空输出与显式拒答按契约报错）
+- 调研依据：① agentic-ai-engineering《unit-testing-agents》主张——"test AI agents without making API calls: mock LLM responses and test everything around the model (message construction, error handling)"；② 沿用上轮 tianpan.co《Dependency Injection for AI》(2026-04) 的"好 fake 断言真实契约 + 可注入缝而非 if TESTING"主张；③ arxiv 2603.05344v1《Building AI Coding Agents for the Terminal》强调 harness 可离线驱动 agent 循环
+- 验证：check-syntax 65/65、validate-config ✓、observer --diff 无违规(7 文件)、node --test **165/165**（新增 15 项全绿）、reviewer VERDICT: PASS
+- `ROADMAP.md`：新增 Done「离线端到端冒烟（agent 管线契约路径，无需真实 LLM）」；「真实 Ollama 端到端验证」仍 In progress（沙箱无 Ollama，需用户本地完成）
+
 ### 2026-07-09（Adapter 网络层 fake-fetch 集成测试 + 可注入 fetch 缝 · 特性级 · 本地，未推送）
 - 完成上轮建议的"给 adapter 的 createClient 做假 fetch 集成测试"，并补上对应的**依赖注入缝**（特性级，零依赖）：
   - `scripts/llm/adapter.mjs` 的 `createClient` 现接受 `opts.fetch` 可注入 fetch 实现（默认仍走全局 `fetch`，**行为完全等价**）；返回对象新增 `fetchImpl` 字段，供测试 / 代理 / 日志中间件透明替换，**不污染生产代码**（无 `if TESTING:` 分支）
