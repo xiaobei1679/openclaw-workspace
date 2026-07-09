@@ -29,6 +29,13 @@ import { resolve, relative, isAbsolute } from 'node:path';
 // config from a short LLM_PROVIDER name (openai/deepseek/qwen/moonshot/siliconflow/ollama)
 // or explicit base/model/key overrides. Identical to the legacy flow when none are set.
 import { buildConfig, chatCompletionsUrl, buildHeaders } from '../llm/adapter.mjs';
+// Resilience layer (2026-07-09 round 2, GitHub-sourced, zero-dep):
+//   prompt-cache (messkan/prompt-cache, karthyick/prompt-cache) + circuit
+//   breaker (rheatkhs/yves-circuit-breaker). Both engage ONLY on the real
+//   network path (when no test `opts.fetch` is injected) and opt out via the
+//   LLM_CACHE / LLM_CIRCUIT env flags. Docs: docs/LLM_RESILIENCE.md.
+import { lookup, store, DEFAULT_LEDGER } from '../llm/cache.mjs';
+import { createBreaker, CircuitOpenError } from '../llm/circuit-breaker.mjs';
 
 const REPO_ROOT = process.cwd();
 const TOKEN = process.env.GITHUB_TOKEN;
@@ -52,6 +59,27 @@ const LLM_TIMEOUT_MS = parseInt(process.env.LLM_TIMEOUT_MS || '120000', 10);
 const LLM_RETRIES = parseInt(process.env.LLM_RETRIES || '1', 10);
 // Max LLM response body size (2 MB) — prevents OOM from malformed responses.
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+// --- Resilience layer config (PRODUCTION DEFAULT ON; opt-out via env) ---
+//   LLM_CACHE=0      disable the prompt cache
+//   LLM_CIRCUIT=0    disable the circuit breaker
+//   LLM_CACHE_PATH    ledger file (default .cache/llm-cache.json, gitignored)
+//   LLM_CB_FAILURE    consecutive failures that trip OPEN (default 3)
+//   LLM_CB_COOLDOWN  ms to stay OPEN before probing (default 5000)
+//   LLM_CB_SUCCESS    consecutive successes in HALF_OPEN that close it (default 2)
+// The layer ENGAGES only on the real network path (no test `opts.fetch` injected)
+// and is ALWAYS non-fatal: a cache/breaker failure falls through to a plain
+// call, so resilience can never block a valid request.
+const CACHE_ENABLED = (process.env.LLM_CACHE ?? '1') !== '0';
+const CIRCUIT_ENABLED = (process.env.LLM_CIRCUIT ?? '1') !== '0';
+const CACHE_LEDGER = process.env.LLM_CACHE_PATH || DEFAULT_LEDGER;
+const breaker = CIRCUIT_ENABLED
+  ? createBreaker({
+      failureThreshold: Number(process.env.LLM_CB_FAILURE ?? 3),
+      cooldownMs: Number(process.env.LLM_CB_COOLDOWN ?? 5000),
+      successThreshold: Number(process.env.LLM_CB_SUCCESS ?? 2),
+    })
+  : null;
 
 let ISSUE_NUMBER = '';
 
@@ -135,53 +163,124 @@ function getTask() {
   return { title: issue.title, body: issue.body || '', number: issue.number, local: false };
 }
 
-// Internal LLM network boundary. The fetch implementation is injectable via
-// `opts.fetch` — the dependency-injection seam (symmetric with scripts/llm/
-// adapter.mjs's createClient) that lets tests / proxies / logging middleware
-// substitute a fake without polluting product code with `if TESTING:` branches.
-// `opts.config` overrides the resolved module config (so the auth-header contract
-// can be asserted with/without a key). Defaults keep the legacy behavior identical.
-export async function callLLM(system, user, opts = {}, attempt = 0) {
-  const fetchImpl = opts.fetch || globalThis.fetch;
-  const cfg = opts.config || LLM;
+// The raw network exchange — the unit the circuit breaker protects. Contains
+// the AbortController timeout, auth headers, response guards, and the single
+// transient RETRY. Caching / breaker are layered *around* this in callLLM.
+function doFetch(cfg, fetchImpl, system, user, attempt = 0) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
   const headers = buildHeaders(cfg.apiKey);
-  try {
-    const res = await fetchImpl(chatCompletionsUrl(cfg.baseUrl), {
-      method: 'POST',
-      headers,
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: cfg.model,
-        temperature: 0.2,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`LLM HTTP ${res.status}: ${body.slice(0, 500)}`);
+  return Promise.resolve()
+    .then(() =>
+      fetchImpl(chatCompletionsUrl(cfg.baseUrl), {
+        method: 'POST',
+        headers,
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: cfg.model,
+          temperature: 0.2,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+      })
+    )
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`LLM HTTP ${res.status}: ${body.slice(0, 500)}`);
+      }
+      // Guard against oversized responses.
+      const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
+      if (contentLength > MAX_RESPONSE_BYTES) {
+        throw new Error(`LLM response too large (${contentLength} bytes, limit ${MAX_RESPONSE_BYTES})`);
+      }
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    })
+    .catch((e) => {
+      // Retry once on transient failures (network errors / aborts that aren't from real timeouts).
+      if (attempt < LLM_RETRIES && (e.name === 'AbortError' || e.cause?.code === 'ECONNRESET' || e.cause?.code === 'ECONNREFUSED')) {
+        trace('llm_retry', { attempt: attempt + 1, error: e.message });
+        return doFetch(cfg, fetchImpl, system, user, attempt + 1);
+      }
+      throw e;
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+// Public LLM call used by the production pipeline. Layers the prompt cache and
+// circuit breaker AROUND doFetch:
+//   1) prompt-cache lookup  (skips the network on a hit)
+//   2) circuit breaker     (fails fast when the endpoint is unhealthy)
+//   3) store successful response into the cache
+// Engagement rule: resilience is active on the real network path (no test
+// `opts.fetch` injected) and opt-out via LLM_CACHE=0 / LLM_CIRCUIT=0. The
+// `opts.resilience` flag can force it on/off regardless. Failures inside the
+// cache/breaker wrappers are non-fatal — they fall through to a plain doFetch
+// so resilience can never *block* a valid request.
+// The fetch implementation is injectable via `opts.fetch` — the same DI seam as
+// adapter.mjs's createClient — so tests / proxies / logging middleware can
+// substitute a fake without `if (TESTING)` branches. `opts.config` overrides
+// the resolved module config. Defaults keep legacy behavior identical.
+export async function callLLM(system, user, opts = {}, attempt = 0) {
+  const fetchImpl = opts.fetch || globalThis.fetch;
+  const cfg = opts.config || LLM;
+  const useResilience = (opts.resilience ?? !opts.fetch) && CACHE_ENABLED;
+
+  // Build the cache-key request (matches the body doFetch sends).
+  const cacheMessages = [
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ];
+  const cacheOpts = {
+    model: cfg.model,
+    provider: cfg.provider,
+    temperature: 0.2,
+    ledgerPath: CACHE_LEDGER,
+  };
+
+  // 1) prompt-cache lookup
+  if (useResilience) {
+    try {
+      const hit = lookup(cacheMessages, cacheOpts);
+      if (hit.hit) {
+        trace('llm_cache_hit', { key: hit.key, hits: hit.meta?.hits });
+        return hit.value;
+      }
+    } catch {
+      /* cache read failure must never block the request */
     }
-    // Guard against oversized responses.
-    const contentLength = parseInt(res.headers.get('content-length') || '0', 10);
-    if (contentLength > MAX_RESPONSE_BYTES) {
-      throw new Error(`LLM response too large (${contentLength} bytes, limit ${MAX_RESPONSE_BYTES})`);
-    }
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
-  } catch (e) {
-    // Retry once on transient failures (network errors / aborts that aren't from real timeouts).
-    if (attempt < LLM_RETRIES && (e.name === 'AbortError' || e.cause?.code === 'ECONNRESET' || e.cause?.code === 'ECONNREFUSED')) {
-      trace('llm_retry', { attempt: attempt + 1, error: e.message });
-      return callLLM(system, user, opts, attempt + 1);
-    }
-    throw e;
-  } finally {
-    clearTimeout(timer);
   }
+
+  // 2) circuit breaker (or plain call) around the network exchange
+  let text;
+  if (CIRCUIT_ENABLED && (opts.resilience ?? !opts.fetch)) {
+    try {
+      text = await breaker.exec(() => doFetch(cfg, fetchImpl, system, user, attempt));
+    } catch (e) {
+      if (e && e.name === 'CircuitOpenError') {
+        trace('llm_circuit_open', {});
+        throw new Error(
+          `LLM circuit breaker is OPEN (endpoint failing) — failing fast instead of hammering: ${e.message}`
+        );
+      }
+      throw e;
+    }
+  } else {
+    text = await doFetch(cfg, fetchImpl, system, user, attempt);
+  }
+
+  // 3) store successful (non-empty) response into the cache
+  if (useResilience && text) {
+    try {
+      store(cacheMessages, text, cacheOpts);
+    } catch {
+      /* cache write failure must never block the request */
+    }
+  }
+  return text;
 }
 
 // Build the system + user prompts an autonomous agent run uses. Reading the

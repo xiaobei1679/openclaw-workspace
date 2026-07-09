@@ -15,6 +15,7 @@
 // No network calls.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { rmSync, existsSync } from 'node:fs';
 import { callLLM, runAgentOffline, parseFiles, commitLocally } from '../scripts/agent/respond.mjs';
 import { chatCompletionsUrl } from '../scripts/llm/adapter.mjs';
 
@@ -267,4 +268,40 @@ test('commitLocally: runs the exact git checkout/add/commit tool calls via injec
     '-c user.name="agent-bot" -c user.email="agent@noreply.github.com" commit -m "agent: my local task"'
   );
   assert.deepEqual(cmds[2].opts, { stdio: 'pipe' }, 'commit must pipe stdout (non-fatal)');
+});
+
+// ---------------------------------------------------------------------------
+// Resilience integration (cache + circuit breaker) — prove the layer ENGAGES on
+// the real network path when opted on, WITHOUT a real LLM. Uses `resilience:true`
+// + an injected fake fetch (the production engagement rule is "no opts.fetch
+// injected", so we flip it on explicitly here). Fully offline.
+// ---------------------------------------------------------------------------
+
+test('callLLM: prompt cache engages and serves the 2nd identical call without a 2nd fetch', async () => {
+  // Hermetic: clear any persisted ledger from a prior run so the first call
+  // is guaranteed a cache MISS (asserts exactly one fetch across two calls).
+  rmSync('.cache/llm-cache.json', { force: true });
+  const calls = [];
+  const fake = makeFakeFetch({ calls, content: 'cached-answer-it' });
+  const opts = { fetch: fake, resilience: true, config: cfg({ model: 'gpt-4o-mini-cache-it' }) };
+  const a = await callLLM('sys-it', 'user-it', opts);
+  const b = await callLLM('sys-it', 'user-it', opts);
+  assert.equal(a, 'cached-answer-it');
+  assert.equal(b, 'cached-answer-it');
+  assert.equal(calls.length, 1, '2nd identical request must be served from cache (no 2nd network call)');
+  rmSync('.cache/llm-cache.json', { force: true }); // tidy: don't leave a ledger behind
+});
+
+test('callLLM: circuit breaker engages and fails fast (no fetch) once OPEN', async () => {
+  const calls = [];
+  const failing = makeFakeFetch({ calls, ok: false, status: 503, content: 'down' });
+  const opts = { fetch: failing, resilience: true, config: cfg({ model: 'gpt-4o-mini-cb-it' }) };
+  // failureThreshold default 3 -> first 3 calls each hit fetch once and fail.
+  await assert.rejects(() => callLLM('s', 'u', opts), /LLM HTTP 503/);
+  await assert.rejects(() => callLLM('s', 'u', opts), /LLM HTTP 503/);
+  await assert.rejects(() => callLLM('s', 'u', opts), /LLM HTTP 503/);
+  assert.equal(calls.length, 3, 'three failures should accrue before the breaker opens');
+  // 4th call: breaker OPEN -> does NOT invoke fetch, fails fast with circuit message.
+  await assert.rejects(() => callLLM('s', 'u', opts), /circuit breaker is OPEN/);
+  assert.equal(calls.length, 3, 'an OPEN breaker must not invoke fetch again');
 });

@@ -5,6 +5,16 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（缓存 + 熔断器默认接入 respond.mjs 生产路径 · 特性级 · 本地，未推送）
+- 按用户指示，把上一轮落地的两块零依赖 LLM 弹性基础设施**默认接入自主智能体生产路径**（`scripts/agent/respond.mjs` 的 `callLLM`），不再是"仅作可 import 库 + 文档示例"：
+  - **重构 `callLLM`**：抽出真实网络交换 `doFetch`（保留原有的超时 / 瞬态重试 / 2MB 响应上限 / 解析诊断），在其外层叠① prompt 缓存查命中（命中则跳过网络、直接返回）→ ② 熔断器包裹 `doFetch`（OPEN 时快速失败、不空转重试）→ ③ 成功后落缓存
+  - **默认开启、非致命**：缓存与熔断在生产路径（未注入测试 `opts.fetch`）自动生效；`LLM_CACHE=0` / `LLM_CIRCUIT=0` 可分别关闭；模块级熔断器单例跨多次调用累积失败，真正对持续故障 provider 做"雷鸣羊群"防护。缓存读/写失败或熔断异常只 `trace` 一条日志并回落普通 `doFetch`，**弹性层本身永不阻断合法请求**
+  - **零磁盘副作用保离线契约**：测试注入 `opts.fetch` 时弹性层自动不生效（`(opts.resilience ?? !opts.fetch)`），`runAgentOffline` 等离线契约测试保持纯粹；可用 `opts.resilience=true` 显式开启做集成验证
+  - **环境变量开关**：`LLM_CACHE` / `LLM_CIRCUIT` / `LLM_CACHE_PATH`（默认 `.cache/llm-cache.json`，已 gitignore）/ `LLM_CB_FAILURE`(3) / `LLM_CB_COOLDOWN`(5000ms) / `LLM_CB_SUCCESS`(2)
+  - 调研依据（同上一轮 GitHub / 技术站点直搜，可复制零依赖）：messkan/karthyick prompt-cache、rheatkhs/yves-circuit-breaker、ayushedith/retryify
+  - 配套新增集成测试 `tests/respond.test.mjs`（缓存命中第二次请求不进网络、熔断器跳闸后快速失败不调 fetch，均离线）；`docs/LLM_RESILIENCE.md` 的"接入"段由"可选示例"改为"已默认接入 + 环境开关表"
+  - 质量门影响：仅改 `scripts/agent/respond.mjs`（仍为纯函数 + 可注入边界，契约不变）、`tests/`、`docs/`；`node --check` / `validate-config` / `observer` / `reviewer` 不受影响（旧测试仍 16/16 通过，新增 2 项集成测试）
+
 ### 2026-07-09（anti-over-engineering 原则 · 文档级 · 本地，未推送）
 - 完成 **ROADMAP Next「anti-over-engineering 原则」**（文档级，零风险，呼应本自动化的自我约束）：
   - `AGENTS.md` 在「硬规则」之后新增「Anti-over-engineering principles（设计哲学）」中英双语段：直接落 Anthropic《Building Effective Agents》**第一原则**「能用单次 LLM 调用解决就别上 workflow，能 workflow 就别上 agent」；并固化为可操作规则——① 不为"别人有"而加特性，仅当复杂度**显著改善**开箱即用结果才加；② 零依赖 Node ESM 是**硬约束非风格偏好**（clone-and-run 基石）；③ 新代码必须可验证（纯函数 + `node --test` + 质量门入口），无测试不入库；④ 优先复用 `lib/common.js`；⑤ **自动化工位在框架达高成熟度（质量门全绿、Next 仅剩文档/研究级）时主动暂停**，避免堆改动加重人工每日 review 负担（文档级打磨可，堆特性不可）

@@ -29,15 +29,25 @@ node scripts/llm/cache.mjs --stats
 make llm-cache --messages '...' --model gpt-4o-mini
 ```
 
-**接入 `respond.mjs`（示例，可选）**
-```js
-import { withCache } from '../../scripts/llm/cache.mjs';
-const cachedCall = withCache(
-  (messages, opts) => callLLM(messages, opts),          // 复用既有 callLLM
-  { ledgerPath: '.cache/llm-cache.json', model: LLM.model }
-);
-const { response, cached } = await cachedCall(promptMessages, {});
-```
+**已默认接入 `respond.mjs` 生产路径**
+
+`callLLM` 现在在生产路径（未注入测试 `opts.fetch` 时）自动：先查缓存 → 命中则直接返回（不进网络层）；未命中则经熔断器包裹的真实网络调用 → 成功后落缓存。接入规则如下，无需改业务代码：
+
+| 环境变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `LLM_CACHE` | `1` | 设 `0` 关闭 prompt 缓存 |
+| `LLM_CIRCUIT` | `1` | 设 `0` 关闭熔断器 |
+| `LLM_CACHE_PATH` | `.cache/llm-cache.json` | 缓存账本路径（已 gitignore） |
+| `LLM_CB_FAILURE` | `3` | 连续失败多少次要跳闸 OPEN |
+| `LLM_CB_COOLDOWN` | `5000` | OPEN 保持多久（ms）后放行探针 |
+| `LLM_CB_SUCCESS` | `2` | HALF_OPEN 下连续成功多少次回到 CLOSED |
+
+- 缓存键取 `provider/model/温度0.2/messages`，与 `doFetch` 实际发出的请求体一致。
+- 熔断器为**模块级单例**：跨多次 `callLLM` 累积失败，对持续故障的 provider 真正"雷鸣羊群"防护。
+- **永远非致命**：缓存读/写失败、或熔断器异常都只 `trace` 一条日志并回落到普通 `doFetch`，绝不会因弹性层本身而阻断一次合法请求。
+- 测试注入 `opts.fetch` 时弹性层自动不生效（`(opts.resilience ?? !opts.fetch)`），保持 `runAgentOffline` 等离线契约"零磁盘副作用"；可用 `opts.resilience=true` 显式开启做集成测试。
+
+> 库本身（`withCache` / `createBreaker` 等）仍可直接 import 复用，上述路径只是生产默认接线。
 
 ## 2. 熔断器（Circuit Breaker）— `scripts/llm/circuit-breaker.mjs`
 
@@ -59,12 +69,9 @@ node scripts/llm/circuit-breaker.mjs --demo
 # 或：make circuit-breaker --demo
 ```
 
-**接入 `respond.mjs`（示例，可选）**
-```js
-import { createBreaker, withBreaker } from '../../scripts/llm/circuit-breaker.mjs';
-const breaker = createBreaker({ failureThreshold: 3, cooldownMs: 5000, successThreshold: 2 });
-const guardedCall = withBreaker(breaker, (messages, opts) => callLLM(messages, opts));
-```
+**已默认接入 `respond.mjs` 生产路径**
+
+见第 1 节"已默认接入"中的 `LLM_CIRCUIT` / `LLM_CB_*` 环境变量与"永远非致命"说明——熔断器在 `callLLM` 内包裹 `doFetch`，OPEN 时抛出的 `CircuitOpenError` 会被 `main()` 捕获并转为 `⚠️ 调用 LLM 失败：LLM circuit breaker is OPEN …` 评论（快速失败、不空转重试），由人工介入。
 
 ## 3. 组合：缓存 + 熔断 + 重试
 
@@ -88,4 +95,4 @@ const cachedCall = withCache(
 - **Circuit breaker**：`rheatkhs/yves-circuit-breaker`（明确"零依赖、纯逻辑、框架无关"）、`ayushedith/retryify`（retry/backoff/timeout/breaker/inflight-dedup 一体）；`dev.to` wallacefreitas / young_gao 的 CLOSED/OPEN/HALF_OPEN 状态机实现。
 - 二者均满足本仓库"零依赖 Node ESM"硬规则：纯函数 + 可注入边界（fs / 时钟），离线可单测。
 
-> 设计取舍：缓存与熔断都**未自动改写 `respond.mjs` 生产路径**（保持默认行为不变），仅作为可 import 的库 + 文档示例提供，避免触碰既有离线契约测试。需要默认启用时，按第 1/2 节示例接入即可。
+> 设计取舍：缓存与熔断现已**默认接入 `respond.mjs` 生产路径**（`callLLM` 内 `doFetch` 外层），仍保持对测试注入 `opts.fetch` 透明（自动不生效），不破坏任何既有离线契约测试；环境开关可随时降级为"仅作库"。
