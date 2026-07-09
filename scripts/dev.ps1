@@ -30,10 +30,13 @@ switch ($args[0]) {
     if (-not $env:AGENT_TASK_FILE) {
       $env:AGENT_TASK_FILE = 'scripts/agent/task.example.md'
     }
-    if (-not $env:LLM_BASE_URL) {
-      $env:LLM_BASE_URL = 'http://127.0.0.1:11434/v1'
+    if (-not $env:LLM_PROVIDER) {
+      $env:LLM_PROVIDER = 'ollama'
     }
     & $Node scripts/agent/respond.mjs
+  }
+  'llm-adapter' {
+    & $Node scripts/llm/adapter.mjs $args[1] $args[2] $args[3]
   }
   'install' {
     if (-not (Test-Path '.env')) {
@@ -45,7 +48,7 @@ switch ($args[0]) {
     & $Node scripts/dashboard.mjs
   }
   default {
-    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard}'
+    Write-Host 'Usage: dev.ps1 {check|test|validate|healthcheck|run-agent|install|dashboard|llm-adapter}'
     exit 1
   }
 }

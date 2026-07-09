@@ -24,8 +24,11 @@ case "${1:-help}" in
   run-agent)
     AGENT_LOCAL=1 \
     AGENT_TASK_FILE="${AGENT_TASK_FILE:-scripts/agent/task.example.md}" \
-    LLM_BASE_URL="${LLM_BASE_URL:-http://127.0.0.1:11434/v1}" \
+    LLM_PROVIDER="${LLM_PROVIDER:-ollama}" \
     "$NODE_BIN" scripts/agent/respond.mjs
+    ;;
+  llm-adapter)
+    "$NODE_BIN" scripts/llm/adapter.mjs $2 $3 $4
     ;;
   install)
     cp -n .env.example .env 2>/dev/null || true
@@ -78,7 +81,7 @@ case "${1:-help}" in
     echo "   git push origin main"
     ;;
   *)
-    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard}"
+    echo "Usage: dev.sh {check|test|validate|healthcheck|run-agent|install|review|install-hooks|observer|router|reviewer|roles|evolve|dashboard|llm-adapter}"
     exit 1
     ;;
 esac

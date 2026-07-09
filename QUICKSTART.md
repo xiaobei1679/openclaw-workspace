@@ -14,11 +14,17 @@
    ```bash
    AGENT_LOCAL=1 \
    AGENT_TASK_FILE=scripts/agent/task.example.md \
-   LLM_BASE_URL=http://127.0.0.1:11434/v1 \
+   LLM_PROVIDER=ollama \
    node scripts/agent/respond.mjs
    ```
-   - 本地 Ollama 指向 `127.0.0.1` / `localhost` 时**不需要 `LLM_API_KEY`**。
-   - 用付费/免费托管模型时，加 `LLM_API_KEY=...` 与 `LLM_MODEL=...`（默认 `gpt-4o-mini`）。
+   - 同一套脚本在 **OpenAI / DeepSeek / 通义Qwen / Moonshot / SiliconFlow / Ollama** 上统一运行，靠 `LLM_PROVIDER` 切换（适配层见 `scripts/llm/adapter.mjs`，`make llm-adapter --list` 看全部）：
+     - `LLM_PROVIDER=ollama`（本地零密钥，需 `ollama serve`）
+     - `LLM_PROVIDER=deepseek` + `DEEPSEEK_API_KEY=...`
+     - `LLM_PROVIDER=qwen` + `DASHSCOPE_API_KEY=...`
+     - `LLM_PROVIDER=moonshot` + `MOONSHOT_API_KEY=...`
+     - `LLM_PROVIDER=openai` + `LLM_API_KEY=...`（默认 `gpt-4o-mini`）
+   - 仍可显式覆盖：`LLM_BASE_URL=...` 与 `LLM_MODEL=...`（优先级高于 provider 默认值）。
+   - 本地 Ollama 指向 `127.0.0.1` / `localhost` 时**不需要 key**。
 
 ---
 

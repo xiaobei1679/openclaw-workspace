@@ -5,6 +5,18 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（LLM Adapter 适配层 · 特性级 · 本地，未推送）
+- 完成 **ROADMAP Next/Later「Adapter 层」**：让同一套 agent 脚本在 **OpenAI / DeepSeek / Qwen(DashScope) / Moonshot(Kimi) / SiliconFlow / Ollama** 上统一运行（特性级，零依赖）：
+  - 新增 `scripts/llm/adapter.mjs`——薄适配层，把 provider 名解析为有效连接配置：
+    - `PROVIDERS` 目录（6 个 OpenAI 兼容端点）+ `ALIASES`（gpt/openai、kimi/moonshot、dashscope/tongyi/qwen、silicon/siliconflow、local/ollama 等别名）
+    - 纯函数 `normalizeProviderName` / `resolveProvider` / `chatCompletionsUrl`（去尾斜杠+拼 `/chat/completions`）/ `buildHeaders`（有 key 才加 Bearer）/ `normalizeMessages`（字符串→user、角色校验）/ `buildConfig`（优先级：显式 `baseUrl` 覆盖 provider 默认值，未设时回退 OpenAI+gpt-4o-mini，与旧 `LLM_BASE_URL/LLM_MODEL/LLM_API_KEY` 流程**行为完全等价**）/ `parseCompletion` / `createClient`（绑定 chat 客户端，沿用 timeout/retry/2MB 上限）
+    - CLI：`--list` 列全部 provider；`--provider <name>` 打印解析配置（key 脱敏）
+  - 接入 `respond.mjs`：仅多一行 `import` + 用 `LLM_PROVIDER` 驱动 `buildConfig`；未设置任何变量时回退原默认，**不改变既有运行行为**；设置引导文案同步更新
+  - 新增 `tests/adapter.test.mjs`（15 测试）：覆盖别名归一化、未知 provider 抛错、URL 拼装、header 鉴权、消息归一化（含缺省 role→user、非法 role 抛错）、`buildConfig` 三类优先级（显式 baseUrl / 默认 OpenAI / ollama 本地免密钥 / deepseek 读自身密钥环境变量 / 显式 key 覆盖 / model 覆盖）、响应解析、客户端构造、目录自洽
+  - 接入：`Makefile`/`scripts/dev.sh`/`scripts/dev.ps1` 新增 `llm-adapter` 命令；`run-agent` 默认走 `LLM_PROVIDER=ollama`；**`.env.example` 新增 LLM 适配层段**（各 provider 密钥环境变量说明）；`QUICKSTART.md` 与新增 `examples/llm-providers.md` 示例同步
+- 调研依据：OpenAI Chat Completions 已成事实标准，Ollama/DeepSeek/Qwen(DashScope)/Moonshot/SiliconFlow 均暴露兼容 `/v1/chat/completions` 端点（Ollama 官方 OpenAI-compatibility 文档、DeepSeek/Ollama 接入指南、CSDN《LLM 多厂商接入：provider/api/base_url/adapter 层级划分》、windy664《可替换 LLM 抽象层》）；多智能体框架工程实践主张"LLM 必须可替换"——本适配层用零依赖薄封装把这一需求落地，且保持与旧显式配置完全等价
+- `ROADMAP.md`：Adapter 层（Next/Later→Done）
+
 ### 2026-07-09（轻量框架状态仪表盘 · 特性级 · 本地，未推送）
 - 完成 **ROADMAP Next「轻量 Web 仪表盘」**：新增零依赖 `scripts/dashboard.mjs`，把仓库**框架级**状态做成可离线打开的静态仪表盘（特性级）：
   - 纯函数、零依赖、可单测：`parseRoadmap`（按段统计 Done/In progress/Next/Later 条目，忽略 emoji/括号装饰，遇到未知 `##` 段即停止计数的健壮解析）/ `countTestFiles` / `countScripts` / `countDocs` / `countPresets` / `countConfigAgents` / `qualityGates` / `collectRepoState` / `renderHtml`

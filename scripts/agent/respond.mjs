@@ -25,21 +25,28 @@ import { readFileSync, writeFileSync, rmSync, existsSync, mkdirSync, appendFileS
 import { pathToFileURL } from 'node:url';
 import { execFileSync, execSync } from 'node:child_process';
 import { resolve, relative, isAbsolute } from 'node:path';
+// Adapter layer (ROADMAP "Adapter layer"): resolve the effective LLM connection
+// config from a short LLM_PROVIDER name (openai/deepseek/qwen/moonshot/siliconflow/ollama)
+// or explicit base/model/key overrides. Identical to the legacy flow when none are set.
+import { buildConfig, chatCompletionsUrl, buildHeaders } from '../llm/adapter.mjs';
 
 const REPO_ROOT = process.cwd();
 const TOKEN = process.env.GITHUB_TOKEN;
 const REPO = process.env.REPO;
 const EVENT_PATH = process.env.EVENT_PATH;
-const LLM_API_KEY = process.env.LLM_API_KEY;
-const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
-const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
 const IS_LOCAL = process.env.AGENT_LOCAL === '1';
 const FORBIDDEN = new Set(['config/openclaw.json', '.env']);
+// Adapter layer: resolve connection config from LLM_PROVIDER / base / model / key.
+// Defaults match the legacy behavior (OpenAI + gpt-4o-mini) when nothing is set.
+const LLM = buildConfig({
+  provider: process.env.LLM_PROVIDER,
+  baseUrl: process.env.LLM_BASE_URL,
+  model: process.env.LLM_MODEL,
+  apiKey: process.env.LLM_API_KEY,
+  apiKeyEnv: 'LLM_API_KEY',
+});
 // When the LLM endpoint is a local/Ollama server, no paid key is required.
-const IS_LOCAL_LLM =
-  /localhost|127\.0\.0\.1|0\.0\.0\.0|ollama/i.test(LLM_BASE_URL) ||
-  /ollama/i.test(LLM_MODEL);
-const HAS_KEY = !!LLM_API_KEY || IS_LOCAL_LLM;
+const HAS_KEY = !!LLM.apiKey || LLM.isLocal;
 // LLM request timeout (ms) and max retry count.
 const LLM_TIMEOUT_MS = parseInt(process.env.LLM_TIMEOUT_MS || '120000', 10);
 const LLM_RETRIES = parseInt(process.env.LLM_RETRIES || '1', 10);
@@ -131,15 +138,14 @@ function getTask() {
 async function callLLM(system, user, attempt = 0) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
-  const headers = { 'Content-Type': 'application/json' };
-  if (LLM_API_KEY) headers.Authorization = `Bearer ${LLM_API_KEY}`;
+  const headers = buildHeaders(LLM.apiKey);
   try {
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+    const res = await fetch(chatCompletionsUrl(LLM.baseUrl), {
       method: 'POST',
       headers,
       signal: controller.signal,
       body: JSON.stringify({
-        model: LLM_MODEL,
+        model: LLM.model,
         temperature: 0.2,
         messages: [
           { role: 'system', content: system },
@@ -218,8 +224,8 @@ async function main() {
     const guide =
       `🤖 **Agent Responder 已就绪，但未配置 LLM。**\n\n` +
       `三种方式启用（任选其一）：\n` +
-      `1) 本地免密钥：装好 Ollama 并 \`ollama serve\`，设 \`LLM_BASE_URL=http://127.0.0.1:11434/v1\`（无需 key）。\n` +
-      `2) 免费托管密钥：DeepSeek / 通义 / Moonshot 等免费额度，设 \`LLM_API_KEY\` + 对应 \`LLM_BASE_URL\`（云端在 Settings → Secrets）。\n` +
+      `1) 本地免密钥：装好 Ollama 并 \`ollama serve\`，设 \`LLM_PROVIDER=ollama\`（或 \`LLM_BASE_URL=http://127.0.0.1:11434/v1\`，无需 key）。\n` +
+      `2) 免费托管密钥：DeepSeek / 通义 / Moonshot 等免费额度，设 \`LLM_PROVIDER=deepseek\`（或 qwen/moonshot）并填对应密钥环境变量（如 \`DEEPSEEK_API_KEY\`）。\n` +
       `3) OpenAI：设 \`LLM_API_KEY\`（默认指向 api.openai.com）。\n` +
       `可选 \`LLM_MODEL\`（本地默认 qwen2.5-coder:3b；云端默认 gpt-4o-mini）。\n\n` +
       `触发方式：云端给 issue 打 \`agent-task\` 标签或评论 \`/agent\`；本地设 \`AGENT_LOCAL=1\` + \`AGENT_TASK_FILE\`。`;

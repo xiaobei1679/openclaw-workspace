@@ -39,17 +39,16 @@
 - **「采集信息 → 框架改进」中立桥梁** (`scripts/evolve/ingest.mjs` + `tests/ingest.test.mjs`) — 把中立采集到的洞察（小说/漫剧/音乐/独立游戏调研等）解析→分类→产出**框架级**改进提案（prompt-template / agent-role / skill / qa-heuristic / doc）；纯函数、零依赖、CLI `make evolve`；补上"审核员消费采集信息→作用到项目"缺失的那半环
 - **闭环「采集 → 审核员 → 应用」**：把 `make evolve` 默认洞察源指向中立示例 `examples/insights/`，并落实 qa-heuristic 提案的真实落点——新增零依赖 `workspace/.learnings/scripts/style-engine.mjs`（文风自检：识别客套开场 / AI 腔过渡词 / 空泛夸张词 / 过长句 / 被动滥用 / 段落重复起句，输出 0-100 评分 + 结构化问题清单），配 `tests/style-engine.test.mjs`（8 测试）。至此"审核员审核收集的信息直接作用到项目"端到端跑通：采集（中立示例）→ `make evolve` 蒸馏提案 → 审核员门禁 → 落为框架改进
 - **轻量框架状态仪表盘**（特性级，零依赖）：新增 `scripts/dashboard.mjs`——扫描仓库框架级状态（Agent 预设 / 配置角色 / 测试数 / 脚本数 / 文档数 / 路线图进度 / 质量门禁健康）并生成**单文件、纯静态、可离线打开**的 `dashboard/index.html`（自包含内联 CSS，无任何 CDN/外链）。完全去个人化（不复用旧 `dashboard-data.js` 的个人项目统计），配套 `tests/dashboard.test.mjs`（13 测试，含解析/计数/HTML 确定性/HTML 注入转义），`Makefile`/`dev.sh`/`dev.ps1` 新增 `dashboard` 命令，`.dashboard/` 加入 `.gitignore`（生成物不入库）
+- **Adapter 层（LLM 多厂商统一）**（特性级，零依赖）：新增 `scripts/llm/adapter.mjs`——把"同一套 agent 脚本在 OpenAI / DeepSeek / Qwen(DashScope) / Moonshot(Kimi) / SiliconFlow / Ollama 上统一运行"做成薄适配层；`normalizeProviderName`/`resolveProvider`/`buildConfig`/`chatCompletionsUrl`/`buildHeaders`/`normalizeMessages`/`parseCompletion`/`createClient` 纯函数可单测，`buildConfig` 优先级（显式 baseUrl 覆盖 provider 默认值）与旧 `LLM_BASE_URL/LLM_MODEL/LLM_API_KEY` 流程**行为完全等价**。已接入 `respond.mjs`（仅多一行 import、`LLM_PROVIDER` 驱动，未设置时回退 OpenAI 默认），配套 `tests/adapter.test.mjs`（15 测试）、`make llm-adapter`/`dev.sh llm-adapter`/`dev.ps1 llm-adapter`、`examples/llm-providers.md` 示例、`QUICKSTART.md` 与 `.env.example` 文档同步
 
 ## In progress 🚧
 - End-to-end verification of the local agent with a **real** local LLM (Ollama `qwen2.5-coder:3b`)
 
 ## Next 🔜 (high value, low risk)
 - **可选：接入真实中立采集源**：把每日中立创作素材分析（`AI创作日报/`）设为一次性 `OPENCLAW_INSIGHTS_DIR` 来源，经 `make evolve` 蒸馏为框架提案；只提取框架级改进、绝不写入项目内容（中立原则）
-- **Adapter 层**：让同一套 agent 脚本在 OpenAI / DeepSeek / Qwen / Ollama 上统一运行
 
 ## Later 💡
 - Release workflow (tags → changelog → GitHub Release)
-- Adapter layer so the same agent scripts run on OpenAI / DeepSeek / Qwen / Ollama uniformly
 
 ## How to contribute a roadmap item
 Open an issue with the `agent-task` label (or comment `/agent`), or just send a PR that
