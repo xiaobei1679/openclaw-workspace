@@ -197,8 +197,15 @@ export function parseCompletion(data) {
   return choice.message.content || '';
 }
 
-// Build a bound chat client. Uses the global `fetch` (Node 18+).
+// Build a bound chat client. Uses the global `fetch` (Node 18+) by default.
 // Mirrors the timeout/retry hardening already in scripts/agent/respond.mjs.
+//
+// The fetch implementation is injectable via `opts.fetch` — this is the
+// dependency-injection seam that lets tests (or proxies / logging middleware)
+// substitute a fake without polluting product code with `if TESTING:` branches.
+// Passing a fake fetch is also the sanctioned way to write a Tier-1 "stub fake"
+// that asserts the real request contract (URL / headers / body) rather than a
+// canned string that silently lies about production behavior.
 export function createClient(config, opts = {}) {
   const cfg = buildConfig(config);
   const endpoint = chatCompletionsUrl(cfg.baseUrl);
@@ -206,6 +213,7 @@ export function createClient(config, opts = {}) {
   const retries = parseInt(opts.retries || process.env.LLM_RETRIES || '1', 10);
   const maxBytes = parseInt(opts.maxBytes || (2 * 1024 * 1024), 10);
   const temperature = opts.temperature == null ? 0.2 : opts.temperature;
+  const fetchImpl = opts.fetch || globalThis.fetch;
 
   async function chat(system, user, attempt = 0) {
     const messages = normalizeMessages([
@@ -216,7 +224,7 @@ export function createClient(config, opts = {}) {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const headers = buildHeaders(cfg.apiKey);
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetchImpl(endpoint, {
         method: 'POST',
         headers,
         signal: controller.signal,
@@ -246,7 +254,7 @@ export function createClient(config, opts = {}) {
     }
   }
 
-  return { config: cfg, endpoint, chat };
+  return { config: cfg, endpoint, chat, fetchImpl };
 }
 
 // ---------------------------------------------------------------------------

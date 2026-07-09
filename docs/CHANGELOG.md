@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（Adapter 网络层 fake-fetch 集成测试 + 可注入 fetch 缝 · 特性级 · 本地，未推送）
+- 完成上轮建议的"给 adapter 的 createClient 做假 fetch 集成测试"，并补上对应的**依赖注入缝**（特性级，零依赖）：
+  - `scripts/llm/adapter.mjs` 的 `createClient` 现接受 `opts.fetch` 可注入 fetch 实现（默认仍走全局 `fetch`，**行为完全等价**）；返回对象新增 `fetchImpl` 字段，供测试 / 代理 / 日志中间件透明替换，**不污染生产代码**（无 `if TESTING:` 分支）
+  - 新增 `tests/adapter-client.test.mjs`（11 测试，Tier-1 stub fake）：用假 fetch **断言真实请求契约**——精确 endpoint URL（`/chat/completions`）/ Bearer 鉴权头仅在含 key 时存在（Ollama 本地无头）/ 请求体含 `model`+`temperature`(默认 0.2)+归一化 `messages` / 真实形态响应解析 / 非 2xx 抛错含状态码 / 响应超 `maxBytes` 上限拒绝 / 瞬态错误(`ECONNRESET`)重试一次后成功 / 重试耗尽重抛 / 全部 6 个 provider 均可绑定调用
+  - 全程零网络调用；假 fetch 断言契约而非"写死的字符串"，避免测试对生产行为说谎（契合 tianpan.co《Dependency Injection for AI》2026-04 主张）
+- 调研依据：① tianpan.co《Dependency Injection for AI: Mocking Model Calls Without Losing Test Fidelity》(2026-04) 主张——好的 LLM fake 应断言真实请求契约（URL/头/体），用可注入缝而非 `if TESTING:` 污染生产；② OpenAI-compatible 客户端单测普遍用可注入 fetch 验证端点与鉴权形态
+- 验证：check-syntax 64/64、validate-config ✓、observer --diff 无违规、node --test **150/150**（新增 11 项全绿）、reviewer VERDICT: PASS
+- `ROADMAP.md`：Adapter 层已在 Done；本次为其网络层补"可验证契约"的事实测试，路线图无新增项
+
 ### 2026-07-09（Release 工作流 · 特性级 · 本地，未推送）
 - 完成 **ROADMAP Later「Release workflow（tags → changelog → GitHub Release）」**：让"打 tag 即自动发布"成为框架标配（特性级，零依赖配套）：
   - 新增 `.github/workflows/release.yml`：仅当人类手动推送语义化 tag（`v*`）或手动 `workflow_dispatch` 时触发；先跑完整 healthcheck（语法 + 配置 + 测试 + eval），再用 `softprops/action-gh-release@v2` + 自动注入的 `GITHUB_TOKEN` 创建 GitHub Release（**不含任何显式 token 行**，`observer` 密钥扫描天然放行）。本地每小时自动化工位绝不打 tag，永不触发此流程——严守"只改本地、绝不推送"铁律
