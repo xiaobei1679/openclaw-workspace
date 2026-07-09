@@ -5,6 +5,15 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（本地提交路径可注入 git 后端缝 · 特性级 · 本地，未推送）
+- 完成上轮"下次建议"第二条——给 `scripts/agent/respond.mjs` 的本地提交逻辑抽取为**可注入 git 后端缝** `commitLocally({ title, now, git })`（特性级，零依赖），使智能体的 git 工具调用可离线契约测试：
+  - `commitLocally` 默认走真实 `defaultGit`（`execSync` 包裹），与原内联实现**行为完全等价**（命令序列：`checkout -B agent/local-<ts>` → `add -A` → `commit -m "agent: <title>"` 且 `stdio:'pipe'` 非致命）；与 `callLLM` 的 `opts.fetch`、`adapter` 的 `createClient` 完全对称——同一套"依赖注入缝"理念贯穿网络层与工具层
+  - 新增 `tests/respond.test.mjs` 断言精确命令序列（分支名 / `add -A` / 固定 bot 身份 commit 且 pipe stdout），**零真实 git 调用**即可证明智能体本地提交路径正确
+- 调研依据：tianpan.co《How to Integration-Test AI Agent Workflows in CI Without Mocking the Model》(2026-04) 主张——第三层 CI 是"工具契约测试（tool-contract testing）"：mock 智能体的工具调用（git/fs）并断言**精确命令**，完全离线；agentharness 等亦主张"mock MCP tools、断言 exact tool calls"；zylos"agent-native CI"把工具层做离线可验证
+- 注意：本改进**未触碰 `scripts/eval/`**（质量门禁脚本只调用不改写，严守硬规则）；上轮"把 runAgentOffline 接入 eval.mjs"的建议因该硬规则已不可行，故改走"git 后端缝"这一同样高价值且合规的路径
+- 验证：check-syntax 66/66、validate-config ✓、observer --diff 无违规(7 文件)、node --test **166/166**（新增 1 项全绿）、reviewer VERDICT: PASS
+- `ROADMAP.md`：新增 Done「Agent 本地提交路径可离线验证（可注入 git 后端缝）」
+
 ### 2026-07-09（respond.mjs 可注入 fetch 缝 + 离线端到端冒烟 · 特性级 · 本地，未推送）
 - 完成上轮建议"给 respond.mjs 的 callLLM 也加可注入 fetch 缝（与 adapter 对称），让 agent 管线可做离线端到端冒烟测试"——把自主智能体管线的 LLM 网络边界做成离线可验证（特性级，零依赖）：
   - `scripts/agent/respond.mjs` 的 `callLLM` 现接受 `opts.fetch`（默认仍走 `globalThis.fetch`，**行为完全等价**）与 `opts.config`（默认模块 `LLM`）；调用形态不变，生产代码无 `if TESTING:` 污染——与 `scripts/llm/adapter.mjs` 的 `createClient(opts.fetch)` 完全对称
