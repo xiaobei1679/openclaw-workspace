@@ -50,6 +50,12 @@
 
 ## Next 🔜 (high value, low risk)
 - **可选：接入真实中立采集源**：把每日中立创作素材分析（`AI创作日报/`）设为一次性 `OPENCLAW_INSIGHTS_DIR` 来源，经 `make evolve` 蒸馏为框架提案；只提取框架级改进、绝不写入项目内容（中立原则）
+- **显式 Evaluator-Optimizer 精炼循环**：把 `reviewer` 评估反馈做成「评估→带着反馈重新生成提案→再评估」闭环（Anthropic 第 5 种 workflow）；保留「FAIL 绝不提交」铁律（来源：外部调研 1.1）
+- **`.learnings/` write-path 规范 + temporal 分层**：`make evolve` ingest 阶段加过滤/去重/打元数据；`LEARNINGS.md` 按 working/episodic/semantic/procedural 分层；零依赖（借 arXiv 2026 三维记忆分类，来源：外部调研 1.2）
+- **权限阶梯配置（per-tool deny/ask/allow）**：在 `observer` 之外加基础设施级权限（Agent Security 2026 第六层栈，来源：外部调研 1.3）
+- **eval harness 加 span-attached 评估 + 框架自测基准**：借 LLM 可观测 2026（来源：外部调研 1.4）
+- **anti-over-engineering 原则**：写入 `AGENTS.md`/`ROADMAP`（Anthropic 简单性第一原则：能单次调用解决就别上 agent）
+- **调研存档已就绪**：`docs/research/2026-07-09-external-research.md` + `examples/insights/`（memory-write-path / evaluator-optimizer-loop / permission-ladder），供自动化工位经 `make evolve` 蒸馏（来源：外部调研）
 
 ## Later 💡
 

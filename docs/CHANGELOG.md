@@ -5,6 +5,12 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-09（外部调研：可借鉴实践 + 可集成热点项目 · 文档级 · 本地，未推送）
+- 新增**中立框架级调研存档** `docs/research/2026-07-09-external-research.md`：跨 5+ 专业站点（Anthropic《Building Effective Agents》/ arXiv 2026《Memory for Autonomous LLM Agents》/ awesome-ai-agents-2026 / AI Agent Security 2026 / 2026 生态盘点）提炼可融入 openclaw-workspace 的架构与模式，含「框架现状对照」与「Next 候选」表（按价值/风险排序）。
+- 同步落 **3 个结构化洞察**到 `examples/insights/`（memory-write-path / evaluator-optimizer-loop / permission-ladder），供自动化工位经 `make evolve` 蒸馏为框架提案（中立原则，绝不写项目内容）。
+- 关键结论：① Anthropic 5 workflow 中框架已有 Routing / 角色驱动 / Evaluator-Optimizer 雏形，缺口在**显式精炼循环**与 Parallelization；② `.learnings/` 缺 **write-path 与 temporal 分层**（借 arXiv 三维记忆分类，零依赖落地）；③ agent 安全六层栈中缺 **per-tool 权限阶梯**；④ 多数热点项目（LangGraph/CrewAI/Dify）是 Python 重框架，「集成」应**借模式而非复制依赖**。
+- 质量门影响：纯 Markdown 调研文档 + insight 示例，不触及任何 `.js/.mjs` 门禁脚本与 `scripts/eval/`；`node --check` / `validate-config` / `observer` / `tests` 不受影响。
+
 ### 2026-07-09（security-auditor 角色预设 · 文档级 · 本地，未推送）
 - 新增第 7 个开箱即用智能体角色预设 `examples/agents/security-auditor.md`，把「安全审计」做成可复用、可克隆的提示模板（文档级，低风险高价值）：
   - 与既有 `reviewer`（质量 / 契约）互补：`reviewer` 守契约与质量门，`security-auditor` 守**安全红线**——侧重**逻辑层**风险（最小权限、注入面、记忆 / 多智能体越界），这些是静态 `observer.mjs` 抓不到的；二者共用同一套安全红线（无明文密钥 / 无个人数据 / 无硬编码绝对路径）

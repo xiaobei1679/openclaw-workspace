@@ -40,6 +40,7 @@ build/
 .vscode/
 .idea/
 .obsidian/
+.workbuddy/          # WorkBuddy/automation session dir (agent runtime state; not framework source)
 
 # Auto-generated
 .auto-gen/
