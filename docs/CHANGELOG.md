@@ -5,6 +5,17 @@
 
 ## openclaw-workspace 公开框架（仓库级更新）
 
+### 2026-07-10（缓存卫生补强 + 诚实边界文档 · 特性/文档级 · 本地，未推送）
+
+- **背景**：对昨日「弹性三件套 + 默认接入生产路径」做深度代码审查（不止跑门禁绿灯，逐行查边界/并发/单例/跨平台）。发现 4 个真问题，本次补掉 3 个纯增益项、诚实记录 2 个设计取舍。
+- **缓存 TTL 过期**（`scripts/llm/cache.mjs`）：`lookup` 新增 `opts.ttlMs`——超龄条目视为未命中。**直接缓解最高优先级问题**：`callLLM` 服务代码生成，缓存键含 `git 文件树+AGENTS.md+任务`，同仓库状态重跑同任务会命中旧结果；若上次生成失败（parse/`node --check`/拒答，均不改跟踪树），立即重跑会拿到**一模一样的失败输出无法自愈**。生产默认 `LLM_CACHE_TTL=6h`（设 0 关闭），超时后可重新生成。
+- **缓存容量上限**（同上）：`store` 新增 `opts.maxEntries`——超限按 `ts` 淘汰最旧，防账本无限膨胀（每条可存最大 2MB 响应）；生产默认 `LLM_CACHE_MAX=500`。
+- **账本原子写**（同上）：`writeAll` 真实 fs 下改 temp+rename——防每小时自迭代与手动运行**重叠时互相覆盖/读到半写文件**；注入 fs shim 无 rename 则回退直写（保离线测试）。
+- **可注入时钟**：`store`/`lookup` 均支持 `opts.now`，测试确定性；`tests/cache.test.mjs` 6→8（+TTL 过期、+容量淘汰）。
+- **生产接线**（`scripts/agent/respond.mjs`）：`cacheOpts` 传 `ttlMs`/`maxEntries`；新增环境变量 `LLM_CACHE_TTL`(6h)/`LLM_CACHE_MAX`(500)。
+- **诚实边界文档**（`docs/LLM_RESILIENCE.md` §5 新增）：① 生成式 codegen 缓存需慎用（prompt 缓存最宜幂等/确定性子调用）；② **熔断器是内存态单例，在当前"一次进程只调一次 LLM"运行模型下几乎不生效**——需多步长驻循环或持久化状态才有跨运行价值，现状"为未来预留、今日备而未用"，不构成危害但别高估；③ `Content-Length` 上限对流式响应会被绕过（既有行为）；④ 原子写仍"最后写入者胜"，真多写者需文件锁。
+- **质量门**：`node --check` + 缓存 8 测试 + 全量测试 + `reviewer.mjs` 全绿。**本地提交，未推送**。
+
 ### 2026-07-09（文档事实性订正：绝不自动推送 + 测试数刷新 · 文档级 · 本地，未推送）
 - 订正公开框架文档中**与真实铁律「只本地 commit、绝不推送远端」矛盾**的过期表述（调研 + 自查发现），落实用户「绝不骗用户」最高原则：
   - `AGENTS.md` 两处——Tests 段「verdict that gates auto-push.」改为「gates **local** commits (it never pushes)」；Contribution flow「The 30-minute auto-iteration automation…pushes `origin/main` only when that gate returns PASS.」改为「The hourly auto-iteration automation…**never pushes to any remote**—a human reviews and pushes manually after the daily review」

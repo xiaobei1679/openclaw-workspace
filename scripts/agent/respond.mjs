@@ -73,6 +73,13 @@ const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const CACHE_ENABLED = (process.env.LLM_CACHE ?? '1') !== '0';
 const CIRCUIT_ENABLED = (process.env.LLM_CIRCUIT ?? '1') !== '0';
 const CACHE_LEDGER = process.env.LLM_CACHE_PATH || DEFAULT_LEDGER;
+// Cache hygiene (bounds staleness + growth):
+//   LLM_CACHE_TTL  ms after which a cached entry is treated as a miss (default
+//     6h) — so a failed/undesired generation isn't frozen forever and can be
+//     regenerated on a later retry. Set 0 to disable expiry.
+//   LLM_CACHE_MAX  max ledger entries before oldest are evicted (default 500).
+const CACHE_TTL_MS = Number(process.env.LLM_CACHE_TTL ?? 6 * 60 * 60 * 1000);
+const CACHE_MAX = Number(process.env.LLM_CACHE_MAX ?? 500);
 const breaker = CIRCUIT_ENABLED
   ? createBreaker({
       failureThreshold: Number(process.env.LLM_CB_FAILURE ?? 3),
@@ -239,6 +246,8 @@ export async function callLLM(system, user, opts = {}, attempt = 0) {
     provider: cfg.provider,
     temperature: 0.2,
     ledgerPath: CACHE_LEDGER,
+    ttlMs: CACHE_TTL_MS,
+    maxEntries: CACHE_MAX,
   };
 
   // 1) prompt-cache lookup

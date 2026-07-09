@@ -19,7 +19,7 @@
 //   remove transient failure.
 
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -55,6 +55,7 @@ export function cacheKey(messages, opts = {}) {
 
 // Build a tiny store around an injectable fs. Defaults to node:fs.
 function makeStore(ledgerPath, fsImpl) {
+  const injected = !!fsImpl;
   const fs = fsImpl || { readFileSync, writeFileSync, existsSync, mkdirSync };
   function readAll() {
     if (!ledgerPath || !fs.existsSync(ledgerPath)) return {};
@@ -71,7 +72,18 @@ function makeStore(ledgerPath, fsImpl) {
     try {
       const dir = dirname(ledgerPath);
       if (dir && dir !== '.') fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(ledgerPath, JSON.stringify(map), 'utf8');
+      const json = JSON.stringify(map);
+      // Atomic write on the real fs (temp file + rename) so an overlapping run
+      // (e.g. the hourly auto-iter racing a manual run) or a crash mid-write
+      // can't corrupt the ledger or expose a torn read. Injected fs shims
+      // (tests) have no renameSync, so fall back to a direct write there.
+      if (!injected) {
+        const tmp = `${ledgerPath}.tmp`;
+        fs.writeFileSync(tmp, json, 'utf8');
+        renameSync(tmp, ledgerPath);
+      } else {
+        fs.writeFileSync(ledgerPath, json, 'utf8');
+      }
       return true;
     } catch {
       return false;
@@ -81,6 +93,12 @@ function makeStore(ledgerPath, fsImpl) {
 }
 
 // Look up a cached response. Returns { hit, key, value, meta }.
+//   opts.ttlMs  (optional): entries older than this are treated as a MISS. This
+//     bounds staleness so an undesired/failed generation can be regenerated on a
+//     later retry instead of being frozen forever. Library default = no expiry
+//     (0/undefined) to stay backward-compatible; the production caller
+//     (respond.mjs) sets a concrete TTL.
+//   opts.now    (optional): injectable clock (default Date.now) for tests.
 export function lookup(messages, opts = {}) {
   const key = cacheKey(messages, opts);
   const ledgerPath = opts.ledgerPath || DEFAULT_LEDGER;
@@ -88,16 +106,44 @@ export function lookup(messages, opts = {}) {
   const map = readAll();
   const entry = map[key];
   if (!entry) return { hit: false, key, value: undefined, meta: null };
+  const ttlMs = opts.ttlMs != null ? Number(opts.ttlMs) : 0;
+  if (ttlMs > 0) {
+    const nowMs = typeof opts.now === 'function' ? opts.now() : Date.now();
+    const tsMs = Date.parse(entry.ts || '');
+    if (Number.isFinite(tsMs) && nowMs - tsMs > ttlMs) {
+      return { hit: false, key, value: undefined, meta: { expired: true, ts: entry.ts } };
+    }
+  }
   return { hit: true, key, value: entry.value, meta: { ts: entry.ts, hits: entry.hits } };
 }
 
 // Store a response under the request key. Returns the key.
+//   opts.maxEntries (optional): cap the ledger size; when exceeded, evict the
+//     oldest entries (by ts). Bounds unbounded growth (each entry can hold a
+//     full LLM response). Library default = unlimited (0/undefined); the
+//     production caller (respond.mjs) sets a concrete cap.
 export function store(messages, value, opts = {}) {
   const key = cacheKey(messages, opts);
   const ledgerPath = opts.ledgerPath || DEFAULT_LEDGER;
   const { readAll, writeAll } = makeStore(ledgerPath, opts.fs);
   const map = readAll();
-  map[key] = { value, ts: new Date().toISOString(), hits: 0 };
+  // opts.now (optional): injectable clock (ms) for deterministic tests; the
+  // stored ts is ISO-8601 so eviction/TTL comparisons stay human-readable.
+  const nowMs = typeof opts.now === 'function' ? opts.now() : Date.now();
+  map[key] = { value, ts: new Date(nowMs).toISOString(), hits: 0 };
+  const maxEntries = opts.maxEntries != null ? Number(opts.maxEntries) : 0;
+  if (maxEntries > 0) {
+    const keys = Object.keys(map);
+    if (keys.length > maxEntries) {
+      keys
+        .map((k) => [k, Date.parse(map[k].ts || '') || 0])
+        .sort((a, b) => a[1] - b[1]) // oldest first
+        .slice(0, keys.length - maxEntries)
+        .forEach(([k]) => {
+          delete map[k];
+        });
+    }
+  }
   writeAll(map);
   return key;
 }

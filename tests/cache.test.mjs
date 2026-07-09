@@ -93,3 +93,35 @@ test('stats reports entry count and accumulated hits', async () => {
   assert.equal(s.entries, 2);
   assert.equal(s.totalHits, 3);
 });
+
+test('ttlMs: a fresh entry hits, an aged entry is a miss (expired)', () => {
+  const m = [{ role: 'user', content: 'ttl' }];
+  const fs = memfs();
+  const base = { ledgerPath: LEDGER, fs, model: 'gpt-4o' };
+  store(m, 'v', base); // stored with real ISO ts (~now)
+  // ttl disabled -> always hits regardless of age
+  assert.equal(lookup(m, { ...base }).hit, true);
+  // now far in the future, short ttl -> expired -> miss
+  const future = Date.now() + 10 * 60 * 1000; // +10 min
+  const expired = lookup(m, { ...base, ttlMs: 1000, now: () => future });
+  assert.equal(expired.hit, false);
+  assert.equal(expired.meta && expired.meta.expired, true);
+  // same age but generous ttl -> still a hit
+  assert.equal(lookup(m, { ...base, ttlMs: 60 * 60 * 1000, now: () => future }).hit, true);
+});
+
+test('maxEntries: exceeding the cap evicts the oldest entry', () => {
+  const fs = memfs();
+  const opts = { ledgerPath: LEDGER, fs, model: 'gpt-4o', maxEntries: 2 };
+  // Inject a strictly increasing clock so eviction order is deterministic.
+  let t = 1_000_000_000_000;
+  const tick = () => (t += 60_000); // +1 min each store
+  store([{ role: 'user', content: 'k1' }], '1', { ...opts, now: tick });
+  store([{ role: 'user', content: 'k2' }], '2', { ...opts, now: tick });
+  store([{ role: 'user', content: 'k3' }], '3', { ...opts, now: tick }); // over cap -> evict oldest
+  const s = stats(LEDGER, fs);
+  assert.equal(s.entries, 2, 'ledger must be capped at maxEntries');
+  // k3 (newest) must survive; k1 (oldest) must be gone.
+  assert.equal(lookup([{ role: 'user', content: 'k3' }], opts).hit, true);
+  assert.equal(lookup([{ role: 'user', content: 'k1' }], opts).hit, false);
+});
